@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: seo_phase1_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: local
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/seo_phase1_test
+      ADS_MODE: "off"
+      CRON_SECRET: ci-only-disposable-worker-token
+      SITE_URL: http://localhost:3100
+      AUTH_ENCRYPTION_KEY: abababababababababababababababababababababababababababababababab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Authentication integration checks
+        run: |
+          npm run start -- --port 3100 > /tmp/seo-web-test.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://localhost:3100/login > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run test:integration
+
+      - name: Publishing integration checks
+        run: |
+          PGPASSWORD=postgres createdb -h localhost -U postgres seo_phase2_test
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/seo_phase2_test npx prisma migrate deploy
+          CHECK_BROWSER=true npm run test:phase2
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
+
+      - name: Search, moderation and consent checks
+        run: npm run test:phase3
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
+
+      - name: Mobile performance targets (three samples per scenario)
+        run: CHECK_PHASE3=performance-only npm run test:phase3
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
+      - name: Retain performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-lighthouse
+          path: .local/lighthouse/*.json
+          include-hidden-files: true
+          if-no-files-found: ignore

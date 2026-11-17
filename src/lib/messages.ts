@@ -1,0 +1,25 @@
+export const messages = {
+  failed: "Sign in failed",
+  tryAgain: "Unable to sign in. Please try again.",
+  startAgain: "Start again",
+  loading: "Loading…",
+  signInAgain: "Please sign in again.",
+  signOutFailed: "Unable to sign out. Please try again.",
+  login: "Sign in",
+  email: "Email",
+  password: "Password",
+  code: "Authenticator or recovery code",
+  verify: "Verify",
+  enroll:
+    "Add this secret to your authenticator app, then enter its six-digit code.",
+  recovery:
+    "Save these recovery codes somewhere private. Each code works once. They will not be shown again.",
+  continue: "Continue to admin",
+  admin: "Publishing administration",
+  logout: "Sign out",
+  revoke: "Sign out all devices",
+  phase2: "Publishing tools will be added in Phase 2.",
+  audit: "Audit log",
+  users: "Users",
+  security: "Account security",
+};

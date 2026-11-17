@@ -1,0 +1,364 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Core models as defined in SRS
+model User {
+  id             Int            @id @default(autoincrement())
+  name           String
+  email          String         @unique
+  passwordHash   String         @map("password_hash")
+  role           Role           @default(EDITOR)
+  mfaEnabled     Boolean        @default(false) @map("mfa_enabled")
+  sessionVersion Int            @default(0) @map("session_version")
+  lastLoginAt    DateTime?      @map("last_login_at")
+  posts          Post[]
+  media          Media[]
+  sessions       Session[]
+  auditLogs      AuditLog[]
+  mfaSecret      String?
+  mfaLastStep    BigInt?
+  recoveryCodes  RecoveryCode[]
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+model Post {
+  id              Int         @id @default(autoincrement())
+  contentType     ContentType @map("content_type")
+  title           String
+  slug            String      @unique
+  excerpt         String?
+  body            String
+  status          PostStatus  @default(DRAFT)
+  scheduledAt     DateTime?   @map("scheduled_at")
+  publishedAt     DateTime?   @map("published_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  authorId        Int         @map("author_id")
+  categoryId      Int         @map("category_id")
+  ogMediaId       Int?
+  featuredMediaId Int?        @map("featured_media_id")
+  metaTitle       String?     @map("meta_title")
+  metaDescription String?     @map("meta_description")
+  canonicalUrl    String?     @map("canonical_url")
+  noindex         Boolean     @default(false)
+  adsEnabled      Boolean     @default(false) @map("ads_enabled")
+  deletedAt       DateTime?   @map("deleted_at")
+
+  author        User         @relation(fields: [authorId], references: [id])
+  category      Category     @relation(fields: [categoryId], references: [id])
+  featuredMedia Media?       @relation("FeaturedMedia", fields: [featuredMediaId], references: [id])
+  tags          PostTag[]
+  jobDetails    JobDetails?
+  reports       JobReport[]
+  publishTask   PublishTask?
+  ogMedia       Media?       @relation("OpenGraphMedia", fields: [ogMediaId], references: [id])
+
+  @@index([status, publishedAt])
+  @@index([scheduledAt])
+  @@index([authorId])
+  @@index([categoryId])
+}
+
+enum ContentType {
+  JOB
+  ARTICLE
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  UNPUBLISHED
+  ARCHIVED
+}
+
+model JobDetails {
+  postId             Int                @id @map("post_id")
+  employerName       String             @map("employer_name")
+  location           String?
+  country            String?
+  workplaceType      String?            @map("workplace_type")
+  employmentType     String?            @map("employment_type")
+  salaryMin          Float?             @map("salary_min")
+  salaryMax          Float?             @map("salary_max")
+  salaryCurrency     String?            @map("salary_currency")
+  salaryPeriod       String?            @map("salary_period")
+  closingDate        DateTime?          @map("closing_date")
+  jobStatus          JobStatus          @default(OPEN) @map("job_status")
+  jobStatusChangedAt DateTime?          @map("job_status_changed_at")
+  applicationUrl     String             @map("application_url")
+  sourceUrl          String             @map("source_url")
+  linkAttestedBy     String?            @map("link_attested_by")
+  linkAttestedAt     DateTime?          @map("link_attested_at")
+  verificationStatus VerificationStatus @default(NONE) @map("verification_status")
+  verifiedAt         DateTime?          @map("verified_at")
+  verifiedBy         String?            @map("verified_by")
+  verificationNote   String?            @map("verification_note")
+
+  post Post @relation(fields: [postId], references: [id])
+
+  @@index([jobStatus, closingDate], map: "JobDetails_status_closing_idx")
+}
+
+enum JobStatus {
+  OPEN
+  EXPIRED
+  FILLED
+}
+
+enum VerificationStatus {
+  NONE
+  VERIFIED
+}
+
+model Category {
+  updatedAt DateTime @default(now()) @updatedAt
+  id          Int     @id @default(autoincrement())
+  name        String
+  slug        String  @unique
+  description String?
+  metaTitle   String? @map("meta_title")
+  metaDesc    String? @map("meta_description")
+  posts       Post[]
+}
+
+model Tag {
+  updatedAt DateTime @default(now()) @updatedAt
+  id          Int       @id @default(autoincrement())
+  name        String
+  slug        String    @unique
+  description String?
+  posts       PostTag[]
+}
+
+model PostTag {
+  postId Int  @map("post_id")
+  tagId  Int  @map("tag_id")
+  post   Post @relation(fields: [postId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+}
+
+model Media {
+  id         Int    @id @default(autoincrement())
+  url        String
+  altText    String @map("alt_text")
+  width      Int
+  height     Int
+  mimeType   String @map("mime_type")
+  sizeBytes  Int    @map("size_bytes")
+  uploadedBy Int    @map("uploaded_by")
+
+  uploader User   @relation(fields: [uploadedBy], references: [id])
+  posts    Post[] @relation("FeaturedMedia")
+  ogPosts  Post[] @relation("OpenGraphMedia")
+}
+
+model Page {
+  updatedAt DateTime   @updatedAt
+  id        Int        @id @default(autoincrement())
+  title     String
+  slug      String     @unique
+  body      String
+  metaTitle String?    @map("meta_title")
+  metaDesc  String?    @map("meta_description")
+  status    PageStatus @default(DRAFT)
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model AdSlot {
+  id        Int     @id @default(autoincrement())
+  key       String @unique // e.g., "header", "in-article-1"
+  enabled   Boolean @default(false)
+  slotId    String? @map("slot_id")
+  placement String?
+  sizes     String? // JSON string of allowed sizes
+  minHeight Int?    @map("min_height")
+  device    Device  @default(ALL)
+}
+
+enum Device {
+  ALL
+  MOBILE
+  DESKTOP
+}
+
+model Redirect {
+  id         Int      @id @default(autoincrement())
+  fromPath   String   @unique @map("from_path")
+  toPath     String   @map("to_path")
+  statusCode Int      @default(301) @map("status_code")
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+model Setting {
+  updatedAt DateTime @default(now()) @updatedAt
+  key   String @id
+  value String
+}
+
+model JobReport {
+  id           Int          @id @default(autoincrement())
+  postId       Int          @map("post_id")
+  postUrl      String? @map("post_url")
+  resolution   String?
+  reporterNote String       @map("reporter_note")
+  status       ReportStatus @default(PENDING)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  reviewedAt   DateTime?    @map("reviewed_at")
+  reviewedBy   String?      @map("reviewed_by")
+
+  post Post @relation(fields: [postId], references: [id])
+
+  @@index([postId], map: "JobReport_postId_idx")
+  @@index([status, createdAt], map: "JobReport_status_createdAt_idx")
+}
+
+enum ReportStatus {
+  UNDER_REVIEW
+  RESOLVED
+  PENDING
+  REVIEWED
+  REJECTED
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  actorId    Int      @map("actor_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   Int?     @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User @relation(fields: [actorId], references: [id])
+}
+
+model Session {
+  id               String   @id
+  userId           Int
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version          Int
+  enrollmentSecret String?
+  attempts         Int      @default(0)
+  mfaVerified      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  lastSeenAt       DateTime @default(now())
+  expiresAt        DateTime
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model RecoveryCode {
+  hash   String @id
+  userId Int
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model LoginBucket {
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime
+}
+
+model PublishTask {
+  id            Int       @id @default(autoincrement())
+  postId        Int       @unique
+  post          Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  runAt         DateTime
+  state         String    @default("PENDING")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime
+  lastError     String?
+  finishedAt    DateTime?
+
+  @@index([state, nextAttemptAt])
+}
+
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model MailOutbox {
+  id            Int       @id @default(autoincrement())
+  subject       String
+  text          String
+  replyTo       String?
+  state         String    @default("PENDING")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  sentAt        DateTime?
+  lastError     String?
+
+  @@index([state, nextAttemptAt])
+}
+
+model WorkerRun {
+  key         String    @id
+  startedAt   DateTime
+  completedAt DateTime?
+  error       String?
+}
+
+model SlugRegistry {
+  slug      String @id
+  ownerType String @map("owner_type")
+}
+
+model TrafficEvent {
+  key String @id
+  kind String
+  path String
+  target String?
+  status Int
+  hits Int @default(1)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  @@index([kind, lastSeenAt])
+}
+model CspViolation {
+  policyHash String
+  reviewedAt DateTime?
+  reviewNote String?
+  key String @id
+  directive String
+  blockedOrigin String
+  disposition String
+  path String
+  hits Int @default(1)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+}
+model CspAudit {
+  id String @id @default(cuid())
+  environment String
+  policyHash String
+  startedAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  reviewedAt DateTime?
+  reviewedBy Int?
+  reviewNote String?
+  @@index([environment, policyHash, startedAt])
+}
