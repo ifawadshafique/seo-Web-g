@@ -20,3 +20,5 @@ See [Phase 2 publishing and worker setup](docs/phase-2.md) for the editor, sched
 Phase 3 adds structured data, crawl outputs, moderation, staging ad layouts, Cookiebot/GA4 integration and CSP reporting. See [Phase 3 setup and remaining staging gates](docs/phase-3.md). Live ads remain off until approval and consent configuration.
 
 Run `npm run build` for the production build. `npm run test:performance` checks mobile list/post performance with ads off and staging placeholders (three samples per scenario). For a deployed protected staging site, run `npm run check:staging -- https://your-staging-host.example` with its Basic credentials configured privately.
+
+See [the free staging prototype and GitHub setup](docs/staging.md) for hosting status, private account setup and the deferred scheduler.

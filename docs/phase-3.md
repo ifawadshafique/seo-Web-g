@@ -105,7 +105,7 @@ CI is configured to run these checks and save the reports, including failed runs
 
 ## Completing the deployment checks
 
-No staging website exists yet. Local test servers are disposable fixtures, not a staging deployment or evidence of an elapsed observation period.
+A protected free staging prototype is deployed at https://seo-web-g-staging.vercel.app; see [the current hosting status](staging.md). Local test servers remain disposable fixtures. The hosted prototype has no continuous scheduler or real elapsed seven-day observation, and original schema-validation content is still required.
 
 1. Deploy a separate staging environment using the platform/setup guide. Use its own database, image bucket and secrets; set `APP_ENV=staging`, an HTTPS `SITE_URL`, `STAGING_BASIC_AUTH`, `CSP_MODE=report-only`, and ads `off` or `placeholder`. Keep `LOCAL_AUTH_SKIP_MFA=false`. Configure the real worker/cron every five minutes so the CSP heartbeat does not reset.
 2. Configure the staging hostname and certified TCF setup in your Cookiebot account. Enter its actual domain group ID in Ads settings. Check denied, granted and withdrawn consent, regional banner behavior, browser CSP reports, and the Google vendor signal on the real provider. Test fixtures do not certify a real account.

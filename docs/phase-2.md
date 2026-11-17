@@ -33,7 +33,7 @@ Local images live in the ignored `.local/uploads` directory and are served at `/
 
 ## Production setup still required
 
-This work is local. Production needs its own database and secrets, S3-compatible bucket, SMTP provider, and an authenticated scheduler. `vercel.json` supplies a five-minute cron for a suitable paid Vercel plan; another host should call `/api/cron` at least every five minutes with the bearer secret. Use a process supervisor for a continuously running local/VPS worker. Configure external uptime/error monitoring so a stopped scheduler or undeliverable alert is noticed even when the application itself is unavailable. The in-app heartbeat does not replace an independent monitor.
+This work is local. Production needs its own database and secrets, S3-compatible bucket, SMTP provider, and an authenticated scheduler. The owner-selected free prototype omits the paid five-minute cron; a later supported scheduler or another host should call `/api/cron` at least every five minutes with the bearer secret. Use a process supervisor for a continuously running local/VPS worker. Configure external uptime/error monitoring so a stopped scheduler or undeliverable alert is noticed even when the application itself is unavailable. The in-app heartbeat does not replace an independent monitor.
 
 MFA bypass remains restricted to explicit local development as requested. Staging and production ignore that flag. Staging authentication, legal text/review, AdSense, consent, structured data/sitemaps, and broader performance/accessibility release checks remain governed by the later SRS phases and gates.
 

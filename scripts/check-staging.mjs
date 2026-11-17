@@ -49,7 +49,17 @@ async function get(path, authenticated = true) {
   );
   const response = await fetch(url, {
     redirect: "manual",
-    headers: authenticated ? { Authorization: authorization } : {},
+    headers: authenticated
+      ? {
+          Authorization: authorization,
+          ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+            ? {
+                "x-vercel-protection-bypass":
+                  process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+              }
+            : {}),
+        }
+      : {},
     signal: AbortSignal.timeout(30000),
   });
   return { response, text: await response.text() };
@@ -63,12 +73,24 @@ async function xml(path, root) {
   return document;
 }
 try {
-  for (const path of ["/", "/admin", "/sitemap.xml"])
-    assert.equal(
-      (await get(path, false)).response.status,
-      401,
+  for (const path of ["/", "/admin", "/sitemap.xml"]) {
+    const { response } = await get(path, false);
+    assert.ok(
+      [401, 403, 302, 307].includes(response.status),
       `${path}: staging must require authentication`,
     );
+    if ([302, 307].includes(response.status)) {
+      const destination = new URL(
+        response.headers.get("location") ?? "",
+        origin,
+      );
+      assert.ok(
+        destination.hostname === "vercel.com" ||
+          destination.hostname.endsWith(".vercel.com"),
+        "Unexpected staging authentication redirect",
+      );
+    }
+  }
   const robots = await get("/robots.txt");
   assert.equal(robots.response.status, 200);
   assert.match(
@@ -77,11 +99,13 @@ try {
     "Staging robots must disallow indexing",
   );
   const index = await xml("/sitemap.xml", "sitemapindex");
-  const urls = new Set(["/", "/search", "/contact"]);
+  const urls = new Set(
+    ["/", "/search", "/contact"].map((path) => new URL(path, origin).href),
+  );
   for (const loc of tags(index, "loc")) {
     const chunk = await xml(DomUtils.textContent(loc).trim(), "urlset");
     for (const entry of tags(chunk, "loc"))
-      urls.add(DomUtils.textContent(entry).trim());
+      urls.add(new URL(DomUtils.textContent(entry).trim(), origin).href);
   }
   assert.ok(
     urls.size <= 200,
@@ -126,8 +150,11 @@ try {
     titles.add(title);
     descriptions.add(description);
     const links = tags(document, "link");
+    const canonical = links.find((node) => node.attribs.rel === "canonical")
+      ?.attribs.href;
+    assert.ok(canonical, `${url.pathname}: missing canonical`);
     assert.equal(
-      links.find((node) => node.attribs.rel === "canonical")?.attribs.href,
+      new URL(canonical).href,
       url.href,
       `${url.pathname}: incorrect canonical`,
     );

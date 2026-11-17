@@ -6,17 +6,17 @@ Tracks Gate 0 (SRS §10.1): decisions signed, staging deploys from CI.
 
 | Item | Decision | Criterion check |
 | --- | --- | --- |
-| Hosting | Vercel **Pro** (paid plan; Hobby forbids commercial use) | PLT-1 ✅ (re-verify terms at signing), PLT-4 on-demand revalidation ✅, PLT-5 custom headers via `next.config.ts` ✅ |
-| Database | Managed PostgreSQL (Neon or Supabase) — one DB per environment | ENV-1 |
+| Hosting | Personal staging prototype: Vercel Hobby at owner request; commercial launch still requires the planned Pro review | PLT-1 ✅ (re-verify terms at signing), PLT-4 on-demand revalidation ✅, PLT-5 custom headers via `next.config.ts` ✅ |
+| Database | Neon Free staging database provisioned; separate production DB remains a launch task | ENV-1 |
 | ORM | Prisma, version-controlled migrations (`prisma migrate`) | ENV-5, DM-8 |
 | Authentication | `iron-session` sealed handles + PostgreSQL sessions + TOTP via `otplib` + per-request session version checks (see phase-1.md) | PLT-3 ✅ (revocation by deleting sessions / bumping version) |
-| Scheduler | Phase 2 implementation: PostgreSQL durable tasks, retry/alert outbox and worker heartbeat; local 30-second runner; Vercel five-minute cron configuration supplied (production deployment/monitoring pending) | PLT-2 (Vercel Cron alone lacks retries → pair with job table + error tracker) |
-| Object storage | Phase 2: local image storage for development; S3-compatible adapter implemented, production provider/bucket pending | — |
+| Scheduler | Phase 2 implementation: PostgreSQL durable tasks, retry/alert outbox and worker heartbeat; local 30-second runner; Five-minute Vercel cron omitted for the owner-selected Hobby prototype; external worker or Pro needed | PLT-2 (Vercel Cron alone lacks retries → pair with job table + error tracker) |
+| Object storage | Phase 2: local image storage for development; S3-compatible adapter implemented, private Vercel Blob adapter/store provisioned for staging; S3 remains available | — |
 | Email | Owner chose local inbox during development; SMTP delivery adapter implemented, production provider pending | — |
 | Error tracking | **TBD** — Sentry | NFR-12 |
 | Uptime monitor | **TBD** — e.g. Better Stack / UptimeRobot | NFR-3 |
 | CMP | Cookiebot integration prepared at owner request (Phase 3); real account/domain/TCF configuration pending | AD-4 |
-| CI | GitHub Actions: typecheck, lint, test, build on every push | ENV-3 |
+| CI | GitHub Actions: checks and integration/mobile suites; first hosted run passed | ENV-3 |
 | Package manager | npm | — |
 | Canonical hostname | **TBD** | SEO-5 |
 
@@ -49,12 +49,12 @@ Secrets live only in `.env` (git-ignored; CLI and app) or `.env.local` (app only
 
 ## Gate 0 checklist
 
-- [ ] Repository scaffolded (Next.js, TypeScript, Tailwind, ESLint) — in progress
-- [ ] Prisma + env validation + `APP_ENV` / `ads_mode` guard
-- [ ] CI workflow committed
-- [ ] Seed script guarded against production (ENV-4)
-- [ ] GitHub repo created and pushed
+- [x] Repository scaffolded (Next.js, TypeScript, Tailwind, ESLint)
+- [x] Prisma + env validation + `APP_ENV` / `ads_mode` guard
+- [x] CI workflow committed; hosted checks passed
+- [x] Seed script guarded against production (ENV-4)
+- [x] GitHub repo created and pushed: `ifawadshafique/seo-Web-g`
 - [ ] Vercel project linked; staging + production env vars set
-- [ ] Staging deploys from CI and is protected + `noindex`
+- [ ] Protected noindex staging deployed; Vercel Git auto-deployment skipped by owner, explicit connected-app deployments available
 - [ ] Open Appendix B items signed by the owner
 - [ ] Legal review started
