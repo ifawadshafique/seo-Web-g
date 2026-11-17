@@ -23,8 +23,11 @@ dbUrl.pathname = "/seo_phase3_test";
 const env = {
   ...process.env,
   DATABASE_URL: dbUrl.toString(),
+  DIRECT_URL: dbUrl.toString(),
   SITE_URL: "http://localhost:3103",
   APP_ENV: "staging",
+  MEDIA_STORAGE: "s3",
+  BLOB_READ_WRITE_TOKEN: "",
   STAGING_BASIC_AUTH: "phase3:local-test-only",
   LOCAL_AUTH_SKIP_MFA: "false",
   CSP_MODE: "report-only",

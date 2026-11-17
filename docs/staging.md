@@ -1,41 +1,27 @@
-# Free staging prototype and GitHub automation
+# Free staging prototype
 
-The owner selected a free prototype on 17 November 2026. Vercel team `orcusflame490-6564s-projects` is on Hobby. This supersedes the earlier Pro assumption for the prototype; commercial launch and its operational gates remain separate.
+Use a dedicated Vercel project with its own Neon PostgreSQL database and private Blob image store. Keep its actual deployment URL, account setup, resource IDs and verification receipts in private local records, not this public repository.
 
-The protected Vercel project is `seo-web-g-staging`, with fixed domain `https://seo-web-g-staging.vercel.app`. The first application deployment is READY and its protected public routes, noindex, owner MFA requirement and private image uploads/optimization were verified. Its source repository is `https://github.com/ifawadshafique/seo-Web-g` (public). The private Blob image store is `seo-web-g-staging-images` in Singapore. The free Neon PostgreSQL project is `seo-web-g-staging` in Singapore, with an independent staging database. Current resource IDs and deployment receipts are saved privately in `.local/deployment-state.json`.
+## Source and deployment workflow
 
-## Deployment behavior
+Source is maintained in GitHub and GitHub Actions runs checks on pushes. The owner-selected workflow uses explicit deployments through the connected Vercel app; native Vercel Git auto-deployment is not configured. ChatGPT can push and deploy requested updates after checking them. Connecting apps does not make it continuously develop features without a task.
 
-Use a dedicated staging project. Its Vercel Production target runs the application with `APP_ENV=staging`; the target name does not make it the public launch environment. The owner explicitly skipped the Vercel Git link. Source is on GitHub’s `main` branch and CI runs on pushes; deployments are performed explicitly through the connected Vercel app when requested. Preview deployments are disabled until isolated preview databases are configured. GitHub CI runs the checks independently; native Vercel Git deployments do not automatically wait for every GitHub CI check unless additional deployment checks are configured.
+Use the project's Vercel Production target with `APP_ENV=staging`; this remains a protected prototype rather than the launch environment. Preview deployments are disabled until independent preview databases are configured. Keep deployment protection, application Basic authentication, noindex and hosted MFA enabled.
 
-ChatGPT can edit and push source when asked and authorized through the GitHub connection. GitHub runs CI after pushes; the Vercel app starts deployments explicitly when requested. Connecting the apps does not make ChatGPT autonomously write features or run continuously without a task.
+## Configuration and migrations
 
-`npm run build:staging` validates protected staging configuration, then runs the versioned Prisma migrations and the production Next.js build. Invalid configuration fails before migrations. Do not point this build at a live application's database. `npm run check:staging-env` runs the preflight without connecting to the database. A separate launch project/build policy must be reviewed before production.
+`npm run prepare:staging` creates private credentials in the Git-ignored `.local/` directory without overwriting existing values. Configure the fixed HTTPS hostname, the managed database and storage in the project's encrypted environment settings. Do not copy development credentials or customer data into the hosted database.
 
-## Private configuration
+Use a pooled `DATABASE_URL` for application traffic and a matching unpooled `DIRECT_URL` for Prisma CLI migrations. `prisma.config.ts` selects `DIRECT_URL` when available. `npm run check:staging-env` validates configuration without contacting the database. `npm run build:staging` validates it, applies versioned migrations, and builds the app. Migrations through transaction poolers can leave session-level advisory locks behind; keep their connection direct.
 
-`npm run prepare:staging` creates `.local/staging.env` with fresh encryption, Basic-auth and worker credentials. It never replaces an existing file or copies local authentication secrets. Set the actual staging database URL and fixed hostname there; keep the file private. The existing development `.env` and admin account are unchanged. `.env`, `.local`, `.vercel`, uploads, database dumps and reports are excluded from Git.
+For images, set `MEDIA_STORAGE=vercel-blob` and provision a private store with its server-side token. The adapter uses immutable WebP object keys and the existing media endpoint. The S3 adapter is still available for other environments.
 
-Use `MEDIA_STORAGE=vercel-blob` and the staging project's `BLOB_READ_WRITE_TOKEN`. The media adapter stores already-converted WebP images privately, uses immutable application keys, and reads them through the existing authorization-checked media endpoint. The S3 adapter remains available for other environments. Configure the real Cookiebot ID only after registering the staging hostname; leave ads approval false and CMP/analytics IDs blank until then.
+For read-only checks against layered Vercel protection, configure `VERCEL_AUTOMATION_BYPASS_SECRET` privately. The staging checker sends it only to the selected origin and does not follow credential-bearing redirects. It does not grant an administrative session or replace Basic authentication and MFA. Root canonical URLs and sitemap URLs are normalized before comparison and deduplication.
 
-## Free-plan limits and pending operations
+## Deferred prototype operations
 
-The checked-in `vercel.json` deliberately has no five-minute cron schedule: the owner chose Hobby, which cannot supply the planned schedule. Scheduled publishing, expiry persistence, notification retries and uninterrupted CSP observation therefore need an explicitly run external worker or a later supported paid scheduler. Deadline-based public/schema closure still works on request. Keep the prototype's scheduling and seven-day CSP gate marked pending; ordinary visits and test fixtures are not proof of continuous monitoring.
+The owner selected the free prototype. The checked-in Vercel configuration has no paid five-minute cron schedule. Scheduled publishing, expiry persistence, notification retries and uninterrupted CSP observation need an explicitly run external worker or a later supported scheduler. A private worker credential can invoke the GET cron endpoint; it grants no access to other pages or administrative operations. Deadline-based closed status and schema removal still work on request.
 
-A manual authenticated worker can call `/api/cron` with the private worker credential. Vercel's Bearer credential is accepted only on that GET endpoint through staging's Basic gate. A worker credential never grants access to other pages or administrative APIs. Vercel's platform-level deployment protection is a separate gate and requires an authorized automation bypass when called externally.
+Live ads remain disabled. SMTP, real Cookiebot domain/TCF configuration, original acceptance-test content and release sign-off remain separate tasks. The staging checker intentionally fails AC-3 until at least five eligible jobs and five original articles exist; do not publish fabricated jobs to force it to pass. No seven-day observation is established by fixtures or occasional visits.
 
-Live ads remain off. This is a personal staging prototype, not a commercial launch. Database and Blob free quotas still apply; no paid plan or automatic billing upgrade was selected.
-
-Dependency review: the Blob SDK’s transitive Zod dependency is constrained to the application’s patched compatible version. npm audit still flags an unpatched picomatch advisory in build/test dependencies and moderate transitive advisories; do not interpret the protected prototype as launch security sign-off.
-
-## Verification receipt
-
-Source commit `f61a1dba80ff4de26b59adf375c0b48244e4189d` was deployed successfully. GitHub CI run `44140685668` completed successfully, including mobile performance checks. Local checks passed 49 unit tests, type checking, lint, build and Phase 3 integration/browser checks. These checks do not certify all release gates or real Cookiebot settings.
-
-The owner account is `admin@gmail.com` / `admin`. Its staging password and the separate site gate credentials are in the git-ignored `.local/staging-admin-login.txt`; sign into the authorized Vercel account before opening staging, then complete MFA enrollment in your own authenticator. A locked deployment-verification editor and one small verification image retain the image-upload audit trail; that editor has no usable interactive password or active verification session. No local development password or data was copied to the hosted database.
-
-The owner chose to skip connecting Vercel Git on 17 November 2026. The connected app can deploy a specific GitHub commit, so ChatGPT can push and deploy updates when asked. GitHub pushes alone do not trigger Vercel deployments in this setup.
-
-For layered Vercel deployment protection, the read-only staging checker also accepts `VERCEL_AUTOMATION_BYPASS_SECRET` from private configuration. It sends this header only to the explicitly selected staging origin and never follows redirects with credentials. The bypass grants no administrative session and does not replace the application's Basic or MFA checks.
-
-The real staging checker passed the implemented protection, robots, sitemap/RSS, metadata, canonical, image-attribute and nonce checks, and stopped at AC-3 because the empty prototype has no five eligible jobs/five original articles. This remains pending; no fabricated job content was published to satisfy it. The manual authenticated worker endpoint was also verified successfully. SMTP delivery, continuous scheduling, real CMP configuration and release acceptance remain pending.
+Run type checking, lint, unit tests, the integration/browser suites and mobile measurements before release. Keep private deployment receipts out of Git. Dependency audit still flags an unpatched glob-matching advisory in build/test dependencies and moderate transitive issues; the prototype is not a launch security sign-off.

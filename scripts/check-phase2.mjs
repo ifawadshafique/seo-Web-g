@@ -7,6 +7,7 @@ database.pathname = "/seo_phase2_test";
 const env = {
   ...process.env,
   DATABASE_URL: database.toString(),
+  DIRECT_URL: database.toString(),
   SITE_URL: "http://localhost:3102",
   APP_ENV: "local",
   LOCAL_AUTH_SKIP_MFA: "false",

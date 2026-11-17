@@ -36,8 +36,33 @@ export function stagingProblems(source: Record<string, string | undefined>) {
       problems.push(
         "DATABASE_URL must require TLS (sslmode=require or stronger)",
       );
+    if (database.hostname.includes("-pooler.") && !source.DIRECT_URL)
+      problems.push(
+        "DIRECT_URL is required for migrations when DATABASE_URL is pooled",
+      );
+    if (source.DIRECT_URL) {
+      const direct = new URL(source.DIRECT_URL);
+      if (
+        !["postgres:", "postgresql:"].includes(direct.protocol) ||
+        direct.hostname.includes("-pooler.") ||
+        direct.pathname !== database.pathname ||
+        !["require", "verify-ca", "verify-full"].includes(
+          direct.searchParams.get("sslmode") ?? "",
+        )
+      )
+        problems.push(
+          "DIRECT_URL must be an unpooled TLS connection to the same staging database",
+        );
+      if (
+        database.hostname.endsWith(".neon.tech") &&
+        direct.hostname !== database.hostname.replace("-pooler.", ".")
+      )
+        problems.push(
+          "DIRECT_URL must target the same Neon endpoint as DATABASE_URL",
+        );
+    }
   } catch {
-    problems.push("DATABASE_URL is missing or invalid");
+    problems.push("DATABASE_URL or DIRECT_URL is missing or invalid");
   }
   if (!/^[a-f0-9]{64}$/i.test(source.AUTH_ENCRYPTION_KEY ?? ""))
     problems.push("AUTH_ENCRYPTION_KEY must be a new 32-byte staging key");

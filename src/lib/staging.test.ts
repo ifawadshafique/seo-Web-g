@@ -20,6 +20,32 @@ const source = {
   AWS_SECRET_ACCESS_KEY: "private-test-key",
 };
 describe("staging deployment preflight", () => {
+  it("requires a matching unpooled migration connection for Neon pooling", () => {
+    const pooled = {
+      ...source,
+      DATABASE_URL:
+        "postgresql://user:private@ep-stage-pooler.ap-southeast-1.aws.neon.tech/staging?sslmode=require",
+    };
+    expect(stagingProblems(pooled)).toContain(
+      "DIRECT_URL is required for migrations when DATABASE_URL is pooled",
+    );
+    expect(
+      stagingProblems({
+        ...pooled,
+        DIRECT_URL:
+          "postgresql://user:private@ep-stage.ap-southeast-1.aws.neon.tech/staging?sslmode=verify-full",
+      }),
+    ).toEqual([]);
+    expect(
+      stagingProblems({
+        ...pooled,
+        DIRECT_URL:
+          "postgresql://user:private@ep-other.ap-southeast-1.aws.neon.tech/staging?sslmode=require",
+      }),
+    ).toContain(
+      "DIRECT_URL must target the same Neon endpoint as DATABASE_URL",
+    );
+  });
   it("accepts private Vercel Blob without AWS credentials", () => {
     expect(
       stagingProblems({
