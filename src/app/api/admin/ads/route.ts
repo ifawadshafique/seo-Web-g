@@ -1,3 +1,4 @@
+import { boundedJson } from "@/lib/request-body";
 import prisma from "@/lib/prisma";
 import { protectedRoute } from "@/lib/auth";
 import { ContentError, contentResult } from "@/lib/api-error";
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   return protectedRoute(request, "settings", (session) =>
     contentResult(async () => {
-      const config = advertisingInput.parse(await request.json());
+      const config = advertisingInput.parse(await boundedJson(request, 65536));
       const error = adConfigurationError(config);
       if (error) throw new ContentError(error);
       await prisma.$transaction(async (tx) => {

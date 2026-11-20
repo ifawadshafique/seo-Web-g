@@ -61,6 +61,11 @@ async function main() {
     ).status,
     403,
   );
+  const oversizedLogin = await call("/api/auth/login", {
+    password: "x".repeat(5000),
+  });
+  assert.equal(oversizedLogin.status, 413);
+  assert.match(oversizedLogin.headers.get("cache-control") ?? "", /no-store/);
   await login("admin@test.example");
   assert.equal((await call("/api/admin/users", undefined, "GET")).status, 401);
   const enrollment = await (await call("/api/auth/enroll")).json();
@@ -73,6 +78,14 @@ async function main() {
   const { recoveryCodes } = await verification.json();
   assert.equal(recoveryCodes.length, 10);
   assert.equal((await call("/api/admin/users", undefined, "GET")).status, 200);
+  const oversizedSettings = await call("/api/admin/settings", {
+    value: "x".repeat(70000),
+  });
+  assert.equal(oversizedSettings.status, 413);
+  assert.match(
+    oversizedSettings.headers.get("cache-control") ?? "",
+    /no-store/,
+  );
   const adminCookie = cookie;
   await call("/api/auth/revoke");
   cookie = adminCookie;

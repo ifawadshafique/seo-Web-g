@@ -1,3 +1,4 @@
+import { boundedJson } from "@/lib/request-body";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { protectedRoute } from "@/lib/auth";
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
     contentResult(async () => {
       const { id } = z
         .object({ id: z.number().int().positive() })
-        .parse(await request.json());
+        .parse(await boundedJson(request, 65536));
       await prisma.$transaction(async (tx) => {
         await tx.publishTask.update({
           where: { id },

@@ -1,3 +1,5 @@
+import { boundedJson } from "@/lib/request-body";
+import { ContentError } from "@/lib/api-error";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import {
@@ -47,7 +49,7 @@ export async function POST(
           email: z.string().email().max(254),
           password: z.string().min(1).max(72),
         })
-        .safeParse(await request.json());
+        .safeParse(await boundedJson(request, 4096));
       if (!parsed.success) return failure();
       const email = parsed.data.email.trim().toLowerCase();
       // Persisted, atomic fixed-window limits. Only trust a proxy header when the deployment explicitly configures it.
@@ -156,7 +158,7 @@ export async function POST(
     if (action === "verify") {
       const parsed = z
         .object({ code: z.string().min(6).max(100) })
-        .safeParse(await request.json());
+        .safeParse(await boundedJson(request, 4096));
       if (!parsed.success || session.mfaVerified) return failure();
       const attempt = await prisma.session.update({
         where: { id: session.id },
@@ -298,7 +300,7 @@ export async function POST(
       { status: 404, headers: privateHeaders },
     );
   } catch (error) {
-    if (error instanceof AuthError)
+    if (error instanceof AuthError || error instanceof ContentError)
       return NextResponse.json(
         { error: error.message },
         { status: error.status, headers: privateHeaders },

@@ -1,3 +1,4 @@
+import { boundedJson } from "@/lib/request-body";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { protectedRoute } from "@/lib/auth";
@@ -36,7 +37,7 @@ const input = z.discriminatedUnion("action", [
 export async function POST(request: Request) {
   return protectedRoute(request, "settings", (session) =>
     contentResult(async () => {
-      const data = input.parse(await request.json());
+      const data = input.parse(await boundedJson(request, 65536));
       if (data.action === "dismiss-violation")
         await prisma.$transaction(async (tx) => {
           await tx.cspViolation.update({

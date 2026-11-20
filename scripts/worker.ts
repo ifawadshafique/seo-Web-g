@@ -1,7 +1,8 @@
 import "dotenv/config";
+import { workerRequest } from "../src/lib/worker-request";
 // Durable tasks live in PostgreSQL; this process only supplies the local clock tick.
 if (!process.env.CRON_SECRET) throw new Error("Configure CRON_SECRET");
-const origin = process.env.SITE_URL ?? "http://localhost:3000";
+workerRequest(); // Fail before entering the loop if the destination is unsafe.
 let stopped = false;
 process.on("SIGINT", () => {
   stopped = true;
@@ -12,22 +13,23 @@ process.on("SIGTERM", () => {
 async function main() {
   while (!stopped) {
     try {
-      const response = await fetch(origin + "/api/cron", {
-        headers: {
-          "x-cron-secret": process.env.CRON_SECRET!,
-          ...(process.env.STAGING_BASIC_AUTH
-            ? {
-                Authorization:
-                  "Basic " +
-                  Buffer.from(process.env.STAGING_BASIC_AUTH).toString(
-                    "base64",
-                  ),
-              }
-            : {}),
-        },
-        signal: AbortSignal.timeout(60000),
-      });
+      const { url, options } = workerRequest();
+      const response = await fetch(url, options);
       if (!response.ok) console.error("Worker tick failed:", response.status);
+      else {
+        const result = await response.json();
+        if (
+          !Number.isInteger(result.published) ||
+          !Number.isInteger(result.failed) ||
+          !Number.isInteger(result.expired)
+        )
+          throw new Error("Invalid worker response");
+        if (result.failed > 0)
+          console.error(
+            "Worker reported failed publication tasks:",
+            result.failed,
+          );
+      }
     } catch {
       console.error(
         "Worker tick unavailable; pending tasks will retry after recovery.",

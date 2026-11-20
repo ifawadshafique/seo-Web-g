@@ -22,3 +22,5 @@ Phase 3 adds structured data, crawl outputs, moderation, staging ad layouts, Coo
 Run `npm run build` for the production build. `npm run test:performance` checks mobile list/post performance with ads off and staging placeholders (three samples per scenario). For a deployed protected staging site, run `npm run check:staging -- https://your-staging-host.example` with its Basic credentials configured privately.
 
 See [the free staging prototype and GitHub setup](docs/staging.md) for hosting status, private account setup and the deferred scheduler.
+
+Phase 4 is in progress. See [recovery tooling and remaining launch gates](docs/phase-4.md) for encrypted backups, isolated restore drills and the remaining launch evidence.

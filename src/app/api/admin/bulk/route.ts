@@ -1,3 +1,4 @@
+import { boundedJson } from "@/lib/request-body";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { protectedRoute } from "@/lib/auth";
@@ -14,7 +15,7 @@ const input = z.object({
 export async function POST(request: Request) {
   return protectedRoute(request, "content", (session) =>
     contentResult(async () => {
-      const data = input.parse(await request.json());
+      const data = input.parse(await boundedJson(request, 65536));
       const ids = [...new Set(data.ids)];
       await prisma.$transaction(async (tx) => {
         const posts = await tx.post.findMany({

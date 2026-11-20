@@ -23,7 +23,11 @@
     "check:staging": "node scripts/check-staging.mjs",
     "prepare:staging": "node scripts/prepare-staging.mjs",
     "build:staging": "node --import tsx scripts/vercel-build.ts",
-    "check:staging-env": "node --import tsx scripts/vercel-build.ts --check"
+    "check:staging-env": "node --import tsx scripts/vercel-build.ts --check",
+    "backup:create": "node --import tsx scripts/recovery.mjs backup",
+    "backup:drill": "node --import tsx scripts/recovery.mjs restore-drill",
+    "check:dependencies": "npm audit --audit-level=moderate --fetch-timeout=30000 --fetch-retries=1",
+    "check:release": "node --import tsx scripts/release-readiness.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1169.0",
@@ -79,6 +83,12 @@
   "overrides": {
     "@vercel/cli-config": {
       "zod": "$zod"
+    },
+    "@prisma/config": {
+      "effect": "3.22.1"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.9"
     }
   }
 }

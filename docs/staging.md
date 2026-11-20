@@ -24,4 +24,4 @@ The owner selected the free prototype. The checked-in Vercel configuration has n
 
 Live ads remain disabled. SMTP, real Cookiebot domain/TCF configuration, original acceptance-test content and release sign-off remain separate tasks. The staging checker intentionally fails AC-3 until at least five eligible jobs and five original articles exist; do not publish fabricated jobs to force it to pass. No seven-day observation is established by fixtures or occasional visits.
 
-Run type checking, lint, unit tests, the integration/browser suites and mobile measurements before release. Keep private deployment receipts out of Git. Dependency audit still flags an unpatched glob-matching advisory in build/test dependencies and moderate transitive issues; the prototype is not a launch security sign-off.
+Run type checking, lint, unit tests, the integration/browser suites and mobile measurements before release. Keep private deployment receipts out of Git. The Phase 4 dependency audit is currently clear after targeted patches; see [hardening and remaining launch gates](phase-4.md). The prototype still requires launch sign-off.

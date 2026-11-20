@@ -1,3 +1,4 @@
+import { boundedJson } from "@/lib/request-body";
 import { z } from "zod";
 import { protectedRoute } from "@/lib/auth";
 import { contentResult } from "@/lib/api-error";
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
     contentResult(async () => {
       const { urls } = z
         .object({ urls: z.array(httpsUrl).min(1).max(2) })
-        .parse(await request.json());
+        .parse(await boundedJson(request, 65536));
       const results = await Promise.all(urls.map(linkResponds));
       return Response.json({
         warnings: urls

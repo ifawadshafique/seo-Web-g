@@ -1,3 +1,4 @@
+import { boundedJson } from "@/lib/request-body";
 import prisma from "@/lib/prisma";
 import { protectedRoute } from "@/lib/auth";
 import { ContentError, contentResult } from "@/lib/api-error";
@@ -31,7 +32,7 @@ export async function PATCH(request: Request, context: Context) {
   return protectedRoute(request, "content", (session) =>
     contentResult(async () => {
       const result = await savePost(
-        await request.json(),
+        await boundedJson(request, 1048576),
         session.user,
         await idOf(context),
       );

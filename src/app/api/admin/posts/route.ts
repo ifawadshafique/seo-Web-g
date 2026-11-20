@@ -1,3 +1,4 @@
+import { boundedJson } from "@/lib/request-body";
 import prisma from "@/lib/prisma";
 import { protectedRoute } from "@/lib/auth";
 import { contentResult } from "@/lib/api-error";
@@ -32,7 +33,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   return protectedRoute(request, "content", (session) =>
     contentResult(async () => {
-      const result = await savePost(await request.json(), session.user);
+      const result = await savePost(
+        await boundedJson(request, 1048576),
+        session.user,
+      );
       revalidatePath("/", "layout");
       return Response.json(result, { status: 201 });
     }),

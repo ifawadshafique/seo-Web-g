@@ -25,3 +25,20 @@ it("parses valid JSON and rejects malformed JSON", async () => {
     ),
   ).rejects.toThrow(SyntaxError);
 });
+it("counts UTF-8 bytes rather than characters and cancels oversized streams", async () => {
+  let cancelled = false;
+  const request = new Request("http://localhost/api/auth/login", {
+    method: "POST",
+    body: new ReadableStream({
+      pull(controller) {
+        controller.enqueue(new TextEncoder().encode('"😀😀😀"'));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    }),
+    duplex: "half",
+  } as RequestInit);
+  await expect(boundedJson(request, 10)).rejects.toMatchObject({ status: 413 });
+  expect(cancelled).toBe(true);
+});

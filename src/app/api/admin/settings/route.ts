@@ -1,3 +1,4 @@
+import { boundedJson } from "@/lib/request-body";
 import { z } from "zod";
 import { protectedRoute } from "@/lib/auth";
 import { contentResult } from "@/lib/api-error";
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   return protectedRoute(request, "settings", (session) =>
     contentResult(async () => {
-      const data = input.parse(await request.json());
+      const data = input.parse(await boundedJson(request, 65536));
       await prisma.$transaction(async (tx) => {
         for (const [key, value] of Object.entries(data))
           await tx.setting.upsert({
