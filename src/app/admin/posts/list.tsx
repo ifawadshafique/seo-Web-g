@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { api, Term, Serialized } from "@/lib/client-api";
 import type { FullPost } from "@/lib/publishing";
 import { ui, statusLabels } from "@/lib/ui-text";
-export function PostList() {
+export function PostList({ initialStatus = "" }: { initialStatus?: string }) {
   const router = useRouter();
   const [posts, setPosts] = useState<Serialized<FullPost>[]>([]);
   const [categories, setCategories] = useState<Term[]>([]);
@@ -13,7 +13,9 @@ export function PostList() {
   const [selected, setSelected] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  async function load(query = "") {
+  async function load(
+    query = new URLSearchParams({ status: initialStatus }).toString(),
+  ) {
     try {
       setPosts(await api(`/api/admin/posts?${query}`));
       setSelected([]);
@@ -24,14 +26,16 @@ export function PostList() {
     }
   }
   useEffect(() => {
-    api<Serialized<FullPost>[]>("/api/admin/posts")
+    api<Serialized<FullPost>[]>(
+      `/api/admin/posts?${new URLSearchParams({ status: initialStatus })}`,
+    )
       .then(setPosts)
       .catch((error) => setError(error.message))
       .finally(() => setLoading(false));
     api<{ categories: Term[] }>("/api/admin/taxonomy")
       .then((data) => setCategories(data.categories))
       .catch((error) => setError(error.message));
-  }, []);
+  }, [initialStatus]);
   return (
     <>
       <div className="editor-top">
@@ -61,7 +65,11 @@ export function PostList() {
           placeholder={ui.titleSearch}
           aria-label={ui.titleSearch}
         />
-        <select name="status" aria-label={ui.status}>
+        <select
+          name="status"
+          aria-label={ui.status}
+          defaultValue={initialStatus}
+        >
           <option value="">{ui.allStatus}</option>
           {Object.entries(statusLabels).map(([key, value]) => (
             <option key={key} value={key}>

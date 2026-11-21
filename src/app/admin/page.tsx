@@ -40,15 +40,20 @@ async function Dashboard() {
       </section>
       <div className="stats-grid">
         {[
-          [ui.posts, total],
-          ["Drafts", drafts],
-          ["Scheduled", scheduled],
-          ["Published", published],
-        ].map(([label, value]) => (
-          <section className="stat" key={label}>
+          [ui.posts, total, "/admin/posts"],
+          ["Drafts", drafts, "/admin/posts?status=DRAFT"],
+          ["Scheduled", scheduled, "/admin/posts?status=SCHEDULED"],
+          ["Published", published, "/admin/posts?status=PUBLISHED"],
+        ].map(([label, value, href]) => (
+          <a
+            className="stat"
+            key={label}
+            href={String(href)}
+            aria-label={`View ${String(label).toLowerCase()} (${value})`}
+          >
             <span>{label}</span>
             <strong>{value}</strong>
-          </section>
+          </a>
         ))}
       </div>
       <div className="settings-layout">

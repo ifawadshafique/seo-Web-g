@@ -77,6 +77,45 @@ try {
     .waitFor();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await page.waitForURL(/\/admin\/posts\/\d+$/);
+  const savedEditorUrl = page.url();
+  for (const [label, status] of [
+    ["drafts", "DRAFT"],
+    ["scheduled", "SCHEDULED"],
+    ["published", "PUBLISHED"],
+    ["posts", ""],
+  ]) {
+    await page.goto(origin + "/admin");
+    const responsePromise = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        url.pathname === "/api/admin/posts" &&
+        (url.searchParams.get("status") ?? "") === status
+      );
+    });
+    await page
+      .getByRole("link", { name: new RegExp("^View " + label + " ") })
+      .click();
+    await page.waitForURL(
+      (url) =>
+        url.pathname === "/admin/posts" &&
+        (url.searchParams.get("status") ?? "") === status,
+    );
+    const response = await responsePromise;
+    assert.equal(response.status(), 200);
+    const filteredPosts = await response.json();
+    assert.ok(filteredPosts.every((post) => !status || post.status === status));
+    assert.equal(
+      await page.getByLabel("Status", { exact: true }).inputValue(),
+      status,
+    );
+    if (status === "DRAFT")
+      await page
+        .getByRole("link", { name: "Browser publishing test", exact: true })
+        .waitFor();
+  }
+  await page.goto(savedEditorUrl);
+  await page.getByLabel("Title", { exact: true }).waitFor();
+
   await page
     .getByText(
       "As the admin, I approve publishing this post with fewer than 400 words.",
@@ -139,7 +178,7 @@ try {
   });
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: browser editor create/save/publish, public content, admin navigation, and layouts at 360/768/1440 px without browser exceptions.",
+    "PASS: browser editor create/save/publish, public content, clickable dashboard status filters, admin navigation, and layouts at 360/768/1440 px without browser exceptions.",
   );
   await context.close();
 } finally {

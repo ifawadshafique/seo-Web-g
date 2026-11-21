@@ -338,6 +338,13 @@ label {
   border: 1px solid var(--border);
   border-radius: 10px;
 }
+.stat:hover {
+  border-color: var(--green);
+}
+.stat:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
 .stat span {
   display: block;
   font-size: 0.8rem;
