@@ -1,3 +1,4 @@
+import { firebaseConfigured } from "@/lib/firebase-auth";
 /* eslint-disable @next/next/no-html-link-for-pages -- Public links use full server navigation to limit hydration work on low-end devices. */
 import { imageUrl } from "@/lib/image-url";
 import { headers } from "next/headers";
@@ -31,6 +32,7 @@ export async function PublicFrame({ children }: { children: React.ReactNode }) {
           <a href="/search">{ui.search}</a>
           <a href="/about">{ui.about}</a>
           <a href="/contact">{ui.contact}</a>
+          {firebaseConfigured() && <a href="/account">Sign in / Account</a>}
           <a className="nav-admin" href="/admin">
             Publishing desk ↗
           </a>

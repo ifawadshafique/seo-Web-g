@@ -3,6 +3,7 @@ import { z } from "zod";
 
 export const reservedSlugs = new Set([
   "admin",
+  "account",
   "api",
   "category",
   "tag",

@@ -110,7 +110,7 @@ export function adConfigurationError(
   return null;
 }
 export function adsAllowedOnPath(path: string) {
-  return !/^\/(admin|login|search|contact|404|report|thank-you|api)(\/|$)/.test(
+  return !/^\/(admin|login|account|search|contact|404|report|thank-you|api)(\/|$)/.test(
     path,
   );
 }

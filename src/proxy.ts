@@ -34,7 +34,9 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
       );
     if (appEnv !== "production")
       response.headers.set("X-Robots-Tag", "noindex, nofollow");
-    if (/^\/(admin|login|api\/(auth|admin))(\/|$)/.test(path)) {
+    if (
+      /^\/(admin|login|account|api\/(auth|admin|member-auth))(\/|$)/.test(path)
+    ) {
       response.headers.set("Cache-Control", "private, no-store");
       response.headers.set("X-Robots-Tag", "noindex, nofollow");
     }
@@ -93,7 +95,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   };
   if (
     /^\/[a-z0-9-]+\/?$/.test(path) &&
-    !/^\/(admin|login|contact|search|404|feed)\/?$/.test(path)
+    !/^\/(admin|login|account|contact|search|404|feed)\/?$/.test(path)
   ) {
     const fromPath = path.replace(/\/$/, "");
     const redirect = await prisma.redirect.findUnique({ where: { fromPath } });
