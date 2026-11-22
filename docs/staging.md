@@ -25,3 +25,9 @@ The owner selected the free prototype. The checked-in Vercel configuration has n
 Live ads remain disabled. SMTP, real Cookiebot domain/TCF configuration, original acceptance-test content and release sign-off remain separate tasks. The staging checker intentionally fails AC-3 until at least five eligible jobs and five original articles exist; do not publish fabricated jobs to force it to pass. No seven-day observation is established by fixtures or occasional visits.
 
 Run type checking, lint, unit tests, the integration/browser suites and mobile measurements before release. Keep private deployment receipts out of Git. The Phase 4 dependency audit is currently clear after targeted patches; see [hardening and remaining launch gates](phase-4.md). The prototype still requires launch sign-off.
+
+## Optional public preview
+
+When the owner explicitly chooses public access, set `STAGING_PUBLIC_ACCESS=true`, leave `STAGING_BASIC_AUTH` empty, and keep `ADS_MODE=off`. Disable Vercel deployment protection only after the new deployment is ready and the application authentication checks pass. Public previews retain `APP_ENV=staging`, noindex/robots restrictions, report-only CSP, admin authentication/MFA and draft isolation. They are accessible demos, not evidence that launch gates are complete. Keep hosted MFA bypass disabled and never expose database or worker credentials in browser configuration.
+
+The default remains protected staging. To return to it, restore strong Basic credentials, set `STAGING_PUBLIC_ACCESS=false`, redeploy and re-enable platform protection. The staging checker understands both access modes and still enforces private admin APIs, noindex and content checks.

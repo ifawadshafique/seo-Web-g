@@ -1,6 +1,6 @@
 # Phase 4: hardening and launch preparation
 
-Phase 4 is in progress. The protected free staging prototype is not a public launch or a completed security sign-off.
+Phase 4 is in progress. The free staging prototype is not a completed launch or security sign-off. Public access may be explicitly enabled as a preview; see [hosting configuration](staging.md).
 
 ## Recovery
 
@@ -63,6 +63,6 @@ Run `DOTENV_CONFIG_PATH=.local/staging.env npm run check:release` to measure act
 
 The current staging report has zero published posts, no eligible job/article samples, missing published About/Privacy/Terms/Disclaimer pages, missing provider verification configuration and a stale worker/CSP heartbeat. Start continuous observation only after the selected worker host is operational; a stale window does not count toward the seven days.
 
-Remaining work requires an always-on worker and delivered alerts, daily retained off-machine backups, original reviewed content and accurate legal pages, written legal review, real consent-provider checks, webmaster verification and sitemap submission, actual-staging post/list mobile measurements, seven real uninterrupted CSP days, and owner acceptance of AC-1 through AC-22. Vercel hosting alone does not establish these gates. Keep the free protected prototype and live ads off until those requirements are met.
+Remaining work requires an always-on worker and delivered alerts, daily retained off-machine backups, original reviewed content and accurate legal pages, written legal review, real consent-provider checks, webmaster verification and sitemap submission, actual-staging post/list mobile measurements, seven real uninterrupted CSP days, and owner acceptance of AC-1 through AC-22. Vercel hosting alone does not establish these gates. Keep admin authentication enforced and live ads off while those requirements remain pending. Public-preview access does not complete the launch gates.
 
 The latest local mobile run exceeded the 200 ms blocking-time target on the listing page. Its raw samples are retained privately. This remains a failed measurement; CI repeats the same budgets, and actual-staging measurements remain a separate gate. No performance threshold was relaxed.

@@ -20,6 +20,26 @@ const source = {
   AWS_SECRET_ACCESS_KEY: "private-test-key",
 };
 describe("staging deployment preflight", () => {
+  it("permits explicitly selected public previews while retaining admin MFA and ads guards", () => {
+    const publicPreview = {
+      ...source,
+      STAGING_PUBLIC_ACCESS: "true",
+      STAGING_BASIC_AUTH: "",
+      ADS_MODE: "off",
+    };
+    expect(stagingProblems(publicPreview)).toEqual([]);
+    for (const change of [
+      { STAGING_PUBLIC_ACCESS: "false" },
+      { STAGING_PUBLIC_ACCESS: "yes" },
+      { STAGING_BASIC_AUTH: "stage:private" },
+      { LOCAL_AUTH_SKIP_MFA: "true" },
+      { ADS_MODE: "placeholder" },
+      { ADS_MODE: "live" },
+    ])
+      expect(
+        stagingProblems({ ...publicPreview, ...change }).length,
+      ).toBeGreaterThan(0);
+  });
   it("requires a matching unpooled migration connection for Neon pooling", () => {
     const pooled = {
       ...source,

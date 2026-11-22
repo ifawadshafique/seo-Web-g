@@ -66,16 +66,28 @@ export function stagingProblems(source: Record<string, string | undefined>) {
   }
   if (!/^[a-f0-9]{64}$/i.test(source.AUTH_ENCRYPTION_KEY ?? ""))
     problems.push("AUTH_ENCRYPTION_KEY must be a new 32-byte staging key");
-  const basic = source.STAGING_BASIC_AUTH ?? "";
-  const separator = basic.indexOf(":");
+  const publicAccess = source.STAGING_PUBLIC_ACCESS === "true";
   if (
-    separator < 1 ||
-    basic.length - separator - 1 < 24 ||
-    /[\r\n]/.test(basic)
+    source.STAGING_PUBLIC_ACCESS &&
+    !["true", "false"].includes(source.STAGING_PUBLIC_ACCESS)
   )
-    problems.push(
-      "STAGING_BASIC_AUTH needs a username and a generated password of at least 24 characters",
-    );
+    problems.push("STAGING_PUBLIC_ACCESS must be true or false");
+  const basic = source.STAGING_BASIC_AUTH ?? "";
+  if (publicAccess) {
+    if (basic) problems.push("Remove STAGING_BASIC_AUTH for public access");
+    if (source.ADS_MODE !== "off")
+      problems.push("Public previews require ADS_MODE=off");
+  } else {
+    const separator = basic.indexOf(":");
+    if (
+      separator < 1 ||
+      basic.length - separator - 1 < 24 ||
+      /[\r\n]/.test(basic)
+    )
+      problems.push(
+        "STAGING_BASIC_AUTH needs a username and a generated password of at least 24 characters",
+      );
+  }
   if (
     (source.CRON_SECRET?.length ?? 0) < 32 ||
     /[\r\n]/.test(source.CRON_SECRET ?? "")

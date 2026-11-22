@@ -7,7 +7,7 @@ import { parseDocument, DomUtils } from "htmlparser2";
 const value = process.argv[2];
 if (!value || value === "--help") {
   console.log(
-    "Usage: npm run check:staging -- https://your-staging-host.example\nSet STAGING_BASIC_AUTH privately. Reports go to .local/staging-check.json.",
+    "Usage: npm run check:staging -- https://your-staging-host.example\nSet STAGING_BASIC_AUTH privately, or STAGING_PUBLIC_ACCESS=true for a public preview. Reports go to .local/staging-check.json.",
   );
   process.exit(value ? 0 : 1);
 }
@@ -21,16 +21,19 @@ assert.ok(
     !origin.hash,
   "Supply an HTTPS staging origin without credentials, a path or a query",
 );
+const publicAccess = process.env.STAGING_PUBLIC_ACCESS === "true";
 assert.ok(
-  process.env.STAGING_BASIC_AUTH,
+  publicAccess || process.env.STAGING_BASIC_AUTH,
   "Set STAGING_BASIC_AUTH privately before running deployment checks",
 );
-const authorization =
-  "Basic " + Buffer.from(process.env.STAGING_BASIC_AUTH).toString("base64");
+const authorization = process.env.STAGING_BASIC_AUTH
+  ? "Basic " + Buffer.from(process.env.STAGING_BASIC_AUTH).toString("base64")
+  : "";
 const report = {
   checkedAt: new Date().toISOString(),
   origin: origin.origin,
   pages: [],
+  accessMode: publicAccess ? "public-preview" : "protected",
   pendingExternal: [
     "Google Rich Results validation",
     "Real Cookiebot regional/TCF checks",
@@ -51,7 +54,7 @@ async function get(path, authenticated = true) {
     redirect: "manual",
     headers: authenticated
       ? {
-          Authorization: authorization,
+          ...(authorization ? { Authorization: authorization } : {}),
           ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
             ? {
                 "x-vercel-protection-bypass":
@@ -73,7 +76,20 @@ async function xml(path, root) {
   return document;
 }
 try {
-  for (const path of ["/", "/admin", "/sitemap.xml"]) {
+  if (publicAccess) {
+    for (const path of ["/", "/sitemap.xml"])
+      assert.equal(
+        (await get(path, false)).response.status,
+        200,
+        `${path}: public preview must be accessible without credentials`,
+      );
+    assert.equal(
+      (await get("/api/admin/posts", false)).response.status,
+      401,
+      "Public access must not grant admin access",
+    );
+  }
+  for (const path of publicAccess ? [] : ["/", "/admin", "/sitemap.xml"]) {
     const { response } = await get(path, false);
     assert.ok(
       [401, 403, 302, 307].includes(response.status),
@@ -197,7 +213,7 @@ try {
   );
   report.passed = true;
   console.log(
-    `PASS: protected staging, robots, sitemap, RSS, server metadata, nonce coverage, ${jobs} jobs and ${articles} articles. External checks remain listed in the report.`,
+    `PASS: ${publicAccess ? "public preview" : "protected staging"}, robots, sitemap, RSS, server metadata, nonce coverage, ${jobs} jobs and ${articles} articles. External checks remain listed in the report.`,
   );
 } catch (error) {
   report.passed = false;
