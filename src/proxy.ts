@@ -42,7 +42,10 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   };
   if (html && mode === "report-only")
     event.waitUntil(observeCsp().catch(() => {}));
-  if (appEnv === "production") {
+  if (
+    appEnv === "production" ||
+    (appEnv === "staging" && process.env.STAGING_PUBLIC_ACCESS === "true")
+  ) {
     const canonical = new URL(process.env.SITE_URL ?? request.url);
     const protocol =
       process.env.TRUST_PROXY === "true"
