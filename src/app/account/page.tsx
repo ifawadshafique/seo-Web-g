@@ -1,3 +1,5 @@
+import { firebaseStaffUser } from "@/lib/firebase-staff";
+import { currentSession } from "@/lib/auth";
 import Link from "next/link";
 import { currentMember } from "@/lib/member-session";
 import { redirect } from "next/navigation";
@@ -9,6 +11,20 @@ export const metadata = {
 export default async function Page() {
   const user = await currentMember();
   if (!user) redirect("/account/sign-in");
+  const staff = await firebaseStaffUser(user);
+  if (staff) {
+    const session = await currentSession();
+    if (session?.userId === staff.id) redirect("/admin");
+    return (
+      <main className="mx-auto w-full max-w-lg p-8">
+        <h1 className="text-3xl font-bold">Publishing dashboard</h1>
+        <p className="my-6">
+          Complete admin verification to manage jobs, posts and settings.
+        </p>
+        <MemberForm staff />
+      </main>
+    );
+  }
   return (
     <main className="mx-auto w-full max-w-lg p-8">
       <h1 className="text-3xl font-bold">Your account</h1>

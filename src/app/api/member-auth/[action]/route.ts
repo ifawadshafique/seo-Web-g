@@ -1,3 +1,12 @@
+import { cookies } from "next/headers";
+import prisma from "@/lib/prisma";
+import { readToken, digest } from "@/lib/security";
+import {
+  firebaseStaffUser,
+  firebaseStaffChallenge,
+} from "@/lib/firebase-staff";
+import { currentMember } from "@/lib/member-session";
+import { cookieName } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sameOrigin, AuthError, privateHeaders } from "@/lib/auth";
@@ -25,11 +34,48 @@ export async function POST(
   try {
     sameOrigin(request);
     const { action } = await context.params;
+    if (action === "staff") {
+      const identity = await currentMember();
+      const staff = identity ? await firebaseStaffUser(identity) : null;
+      if (!staff)
+        return NextResponse.json(
+          { error: "Publishing access is not enabled for this account" },
+          { status: 403, headers: privateHeaders },
+        );
+      if (
+        !(await publicRateLimit(
+          request,
+          "firebase-staff-challenge",
+          10,
+          15 * 60000,
+        ))
+      )
+        return NextResponse.json(
+          { error: "Too many attempts" },
+          { status: 429, headers: privateHeaders },
+        );
+      const challenge = await firebaseStaffChallenge(staff);
+      const response = NextResponse.json(
+        { ok: true, step: challenge.step },
+        { headers: privateHeaders },
+      );
+      response.cookies.set(cookieName, challenge.cookie, {
+        ...memberCookieOptions,
+        expires: challenge.expires,
+      });
+      return response;
+    }
     if (action === "logout") {
+      const raw = await readToken((await cookies()).get(cookieName)?.value);
+      if (raw) await prisma.session.deleteMany({ where: { id: digest(raw) } });
       const response = NextResponse.json(
         { ok: true },
         { headers: privateHeaders },
       );
+      response.cookies.set(cookieName, "", {
+        ...memberCookieOptions,
+        maxAge: 0,
+      });
       response.cookies.set(memberCookie, "", {
         ...memberCookieOptions,
         maxAge: 0,
@@ -61,15 +107,22 @@ export async function POST(
       ...parsed.data,
       returnSecureToken: true,
     });
-    if (
-      typeof result.idToken !== "string" ||
-      !(await firebaseUserForToken(result.idToken))
-    )
-      throw new FirebaseAuthError();
+    const identity =
+      typeof result.idToken === "string"
+        ? await firebaseUserForToken(result.idToken)
+        : null;
+    if (!identity) throw new FirebaseAuthError();
+    const staff = await firebaseStaffUser(identity);
+    const challenge = staff ? await firebaseStaffChallenge(staff) : null;
     const response = NextResponse.json(
-      { ok: true },
+      { ok: true, ...(challenge ? { step: challenge.step } : {}) },
       { headers: privateHeaders },
     );
+    if (challenge)
+      response.cookies.set(cookieName, challenge.cookie, {
+        ...memberCookieOptions,
+        expires: challenge.expires,
+      });
     response.cookies.set(memberCookie, await sealMemberToken(result.idToken), {
       ...memberCookieOptions,
       maxAge: 3600,

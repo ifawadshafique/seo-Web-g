@@ -1,3 +1,5 @@
+import { currentMember } from "./member-session";
+import { firebaseStaffUser, firebaseStaffPassword } from "./firebase-staff";
 import { connection } from "next/server";
 import { cookies } from "next/headers";
 import prisma from "./prisma";
@@ -12,6 +14,16 @@ export async function currentSession() {
     include: { user: true },
   });
   if (!session || !sessionValid(session, session.user)) return null;
+  if (session.user.passwordHash === firebaseStaffPassword) {
+    if (
+      !session.mfaVerified ||
+      (session.user.role === "ADMIN" && !session.user.mfaEnabled)
+    )
+      return null;
+    const identity = await currentMember();
+    if (!identity || (await firebaseStaffUser(identity))?.id !== session.userId)
+      return null;
+  }
   await prisma.session.updateMany({
     where: { id: session.id, lastSeenAt: session.lastSeenAt },
     data: { lastSeenAt: new Date() },

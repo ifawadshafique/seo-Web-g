@@ -3,9 +3,16 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { messages as m } from "@/lib/messages";
-export function LoginForm() {
-  const [step, setStep] = useState("login");
-  const [secret, setSecret] = useState("");
+export function LoginForm({
+  initialStep = "login",
+  initialSecret = "",
+}: {
+  initialStep?: string;
+  initialSecret?: string;
+}) {
+  const Heading = initialStep === "login" ? "h1" : "h2";
+  const [step, setStep] = useState(initialStep);
+  const [secret, setSecret] = useState(initialSecret);
   const [codes, setCodes] = useState<string[]>([]);
   const router = useRouter();
   const [error, setError] = useState("");
@@ -60,7 +67,7 @@ export function LoginForm() {
   if (step === "done")
     return (
       <section>
-        <h1 className="text-2xl font-bold">{m.recovery}</h1>
+        <Heading className="text-2xl font-bold">{m.recovery}</Heading>
         <ul className="my-6 font-mono">
           {codes.map((code) => (
             <li key={code}>{code}</li>
@@ -73,7 +80,7 @@ export function LoginForm() {
     );
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
-      <h1 className="text-3xl font-bold">{m.login}</h1>
+      <Heading className="text-3xl font-bold">{m.login}</Heading>
       {step === "login" ? (
         <>
           <label>

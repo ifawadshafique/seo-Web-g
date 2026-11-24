@@ -1,3 +1,14 @@
+import {
+  firebaseRequest,
+  firebaseUserForToken,
+  FirebaseAuthError,
+} from "@/lib/firebase-auth";
+import { firebaseStaffUser, firebaseStaffPassword } from "@/lib/firebase-staff";
+import {
+  memberCookie,
+  memberCookieOptions,
+  sealMemberToken,
+} from "@/lib/member-session";
 import { boundedJson } from "@/lib/request-body";
 import { ContentError } from "@/lib/api-error";
 import { NextRequest, NextResponse } from "next/server";
@@ -79,13 +90,29 @@ export async function POST(
       const user = await prisma.user.findUnique({ where: { email } });
       const dummy =
         "$2b$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW";
-      const valid = await checkPassword(
-        parsed.data.password,
-        user?.passwordHash ?? dummy,
-      );
+      let firebaseIdToken: string | null = null;
+      let valid = false;
+      if (user?.passwordHash === firebaseStaffPassword) {
+        const result = await firebaseRequest("signInWithPassword", {
+          email: parsed.data.email,
+          password: parsed.data.password,
+          returnSecureToken: true,
+        });
+        const identity =
+          typeof result.idToken === "string"
+            ? await firebaseUserForToken(result.idToken)
+            : null;
+        valid =
+          !!identity && (await firebaseStaffUser(identity))?.id === user.id;
+        if (valid) firebaseIdToken = result.idToken;
+      } else
+        valid = await checkPassword(
+          parsed.data.password,
+          user?.passwordHash ?? dummy,
+        );
       if (!user || !valid) return failure();
       const value = token();
-      const bypass = localMfaBypass();
+      const bypass = !firebaseIdToken && localMfaBypass();
       const session = await prisma.$transaction(async (tx) => {
         const created = await tx.session.create({
           data: {
@@ -119,6 +146,12 @@ export async function POST(
         { step: bypass ? "done" : user.mfaEnabled ? "verify" : "enroll" },
         { headers: privateHeaders },
       );
+      if (firebaseIdToken)
+        response.cookies.set(
+          memberCookie,
+          await sealMemberToken(firebaseIdToken),
+          { ...memberCookieOptions, maxAge: 3600 },
+        );
       response.cookies.set(cookieName, await sealToken(value), {
         ...cookieOptions,
         expires: session.expiresAt,
@@ -267,6 +300,10 @@ export async function POST(
         { ok: true },
         { headers: privateHeaders },
       );
+      response.cookies.set(memberCookie, "", {
+        ...memberCookieOptions,
+        maxAge: 0,
+      });
       response.cookies.set(cookieName, "", { ...cookieOptions, maxAge: 0 });
       return response;
     }
@@ -292,6 +329,10 @@ export async function POST(
         { ok: true },
         { headers: privateHeaders },
       );
+      response.cookies.set(memberCookie, "", {
+        ...memberCookieOptions,
+        maxAge: 0,
+      });
       response.cookies.set(cookieName, "", { ...cookieOptions, maxAge: 0 });
       return response;
     }
@@ -300,7 +341,13 @@ export async function POST(
       { status: 404, headers: privateHeaders },
     );
   } catch (error) {
-    if (error instanceof AuthError || error instanceof ContentError)
+    if (error instanceof FirebaseAuthError && error.status === 401)
+      return failure();
+    if (
+      error instanceof AuthError ||
+      error instanceof ContentError ||
+      error instanceof FirebaseAuthError
+    )
       return NextResponse.json(
         { error: error.message },
         { status: error.status, headers: privateHeaders },
