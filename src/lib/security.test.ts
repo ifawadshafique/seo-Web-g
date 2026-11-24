@@ -72,3 +72,30 @@ describe("authentication security", () => {
     expect(digest("secret")).not.toContain("secret");
   });
 });
+
+it("password-only authorization still enforces expiration, idle timeout and revocation", () => {
+  const now = new Date();
+  const user = { role: "ADMIN", sessionVersion: 1, mfaEnabled: false };
+  const session = {
+    version: 1,
+    mfaVerified: false,
+    expiresAt: new Date(+now + 60000),
+    lastSeenAt: now,
+  };
+  expect(sessionValid(session, user, now)).toBe(false);
+  expect(sessionValid(session, user, now, true)).toBe(true);
+  expect(sessionValid({ ...session, expiresAt: now }, user, now, true)).toBe(
+    false,
+  );
+  expect(
+    sessionValid(
+      { ...session, lastSeenAt: new Date(+now - 1800000) },
+      user,
+      now,
+      true,
+    ),
+  ).toBe(false);
+  expect(sessionValid(session, { ...user, sessionVersion: 2 }, now, true)).toBe(
+    false,
+  );
+});

@@ -70,13 +70,15 @@ export function sessionValid(
   },
   user: { sessionVersion: number; role: string; mfaEnabled: boolean },
   now = new Date(),
+  passwordOnly = false,
 ) {
   return (
     session.version === user.sessionVersion &&
     session.expiresAt > now &&
     now.getTime() - session.lastSeenAt.getTime() < 30 * 60 * 1000 &&
     ((session.mfaVerified && (user.role !== "ADMIN" || user.mfaEnabled)) ||
-      localMfaBypass())
+      localMfaBypass() ||
+      passwordOnly)
   );
 }
 

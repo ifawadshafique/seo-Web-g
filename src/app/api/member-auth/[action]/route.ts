@@ -37,7 +37,7 @@ export async function POST(
     if (action === "staff") {
       const identity = await currentMember();
       const staff = identity ? await firebaseStaffUser(identity) : null;
-      if (!staff)
+      if (!staff || !identity)
         return NextResponse.json(
           { error: "Publishing access is not enabled for this account" },
           { status: 403, headers: privateHeaders },
@@ -54,7 +54,7 @@ export async function POST(
           { error: "Too many attempts" },
           { status: 429, headers: privateHeaders },
         );
-      const challenge = await firebaseStaffChallenge(staff);
+      const challenge = await firebaseStaffChallenge(staff, identity);
       const response = NextResponse.json(
         { ok: true, step: challenge.step },
         { headers: privateHeaders },
@@ -113,7 +113,9 @@ export async function POST(
         : null;
     if (!identity) throw new FirebaseAuthError();
     const staff = await firebaseStaffUser(identity);
-    const challenge = staff ? await firebaseStaffChallenge(staff) : null;
+    const challenge = staff
+      ? await firebaseStaffChallenge(staff, identity)
+      : null;
     const response = NextResponse.json(
       { ok: true, ...(challenge ? { step: challenge.step } : {}) },
       { headers: privateHeaders },

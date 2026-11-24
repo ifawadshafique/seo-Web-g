@@ -3,7 +3,11 @@ import {
   firebaseUserForToken,
   FirebaseAuthError,
 } from "@/lib/firebase-auth";
-import { firebaseStaffUser, firebaseStaffPassword } from "@/lib/firebase-staff";
+import {
+  firebaseStaffUser,
+  firebaseStaffPassword,
+  firebaseStaffPasswordOnly,
+} from "@/lib/firebase-staff";
 import {
   memberCookie,
   memberCookieOptions,
@@ -92,6 +96,7 @@ export async function POST(
         "$2b$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW";
       let firebaseIdToken: string | null = null;
       let valid = false;
+      let passwordOnly = false;
       if (user?.passwordHash === firebaseStaffPassword) {
         const result = await firebaseRequest("signInWithPassword", {
           email: parsed.data.email,
@@ -104,7 +109,10 @@ export async function POST(
             : null;
         valid =
           !!identity && (await firebaseStaffUser(identity))?.id === user.id;
-        if (valid) firebaseIdToken = result.idToken;
+        if (valid && identity) {
+          firebaseIdToken = result.idToken;
+          passwordOnly = await firebaseStaffPasswordOnly(identity);
+        }
       } else
         valid = await checkPassword(
           parsed.data.password,
@@ -112,7 +120,7 @@ export async function POST(
         );
       if (!user || !valid) return failure();
       const value = token();
-      const bypass = !firebaseIdToken && localMfaBypass();
+      const bypass = firebaseIdToken ? passwordOnly : localMfaBypass();
       const session = await prisma.$transaction(async (tx) => {
         const created = await tx.session.create({
           data: {
@@ -134,7 +142,9 @@ export async function POST(
           await tx.auditLog.create({
             data: {
               actorId: user.id,
-              action: "LOCAL_PASSWORD_LOGIN",
+              action: passwordOnly
+                ? "FIREBASE_STAFF_PASSWORD_ONLY_LOGIN"
+                : "LOCAL_PASSWORD_LOGIN",
               entityType: "User",
               entityId: user.id,
             },

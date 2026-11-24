@@ -22,13 +22,30 @@ export async function firebaseStaffUser(identity: {
     ? user
     : null;
 }
-export async function firebaseStaffChallenge(user: {
-  id: number;
-  sessionVersion: number;
-  mfaEnabled: boolean;
+export function firebaseStaffPasswordOnlyKey(uid: string) {
+  return `firebase_staff_password_only:${process.env.FIREBASE_PROJECT_ID}:${uid}`;
+}
+export async function firebaseStaffPasswordOnly(identity: {
+  uid: string;
+  email: string;
 }) {
+  if (!(await firebaseStaffUser(identity))) return false;
+  const policy = await prisma.setting.findUnique({
+    where: { key: firebaseStaffPasswordOnlyKey(identity.uid) },
+  });
+  return policy?.value === "true";
+}
+export async function firebaseStaffChallenge(
+  user: {
+    id: number;
+    sessionVersion: number;
+    mfaEnabled: boolean;
+  },
+  identity: { uid: string; email: string },
+) {
+  const passwordOnly = await firebaseStaffPasswordOnly(identity);
   const raw = token(),
-    expires = new Date(Date.now() + 5 * 60000);
+    expires = new Date(Date.now() + (passwordOnly ? 12 * 3600000 : 5 * 60000));
   await prisma.$transaction(async (tx) => {
     await tx.session.create({
       data: {
@@ -39,17 +56,24 @@ export async function firebaseStaffChallenge(user: {
         expiresAt: expires,
       },
     });
+    if (passwordOnly)
+      await tx.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
     await tx.auditLog.create({
       data: {
         actorId: user.id,
-        action: "FIREBASE_STAFF_PASSWORD_LOGIN",
+        action: passwordOnly
+          ? "FIREBASE_STAFF_PASSWORD_ONLY_LOGIN"
+          : "FIREBASE_STAFF_PASSWORD_LOGIN",
         entityType: "User",
         entityId: user.id,
       },
     });
   });
   return {
-    step: user.mfaEnabled ? "verify" : "enroll",
+    step: passwordOnly ? "done" : user.mfaEnabled ? "verify" : "enroll",
     cookie: await sealToken(raw),
     expires,
   };
