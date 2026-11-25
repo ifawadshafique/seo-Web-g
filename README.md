@@ -15,6 +15,14 @@ npm run dev
 
 Open http://localhost:3000/login. There are no built-in login credentials.
 
+### Draft publishing from Claude or ChatGPT
+
+The Streamable HTTP connector is available at `<SITE_URL>/api/mcp` once OAuth is configured. It supports content search, category lookup, job and article draft creation, title and body edits on existing drafts, and draft site pages for administrators. Review drafts in `/admin`.
+
+Configure a trusted OAuth authorization server for the Claude and ChatGPT clients. It must advertise OAuth discovery metadata and support authorization code with PKCE. Configure it to issue short-lived RS256 or ES256 JWT access tokens with the connector URL as the audience and `content:drafts` in the `scope` claim. Register the callback URLs from each client or configure a supported client registration method.
+
+In Vercel, set `MCP_OAUTH_ISSUER` to the exact token issuer, `MCP_OAUTH_JWKS_URL` to its signing key endpoint, and `MCP_OAUTH_SUBJECT` to the authorized operator's immutable OAuth subject. Set `MCP_STAFF_USER_ID` to that operator's numeric user ID in the site's staff database. Use the staging site's URL for the staging audience and verify an authenticated draft there before enabling the production connector. The staging connector must be reachable from the client with OAuth bearer authentication.
+
 See [Phase 2 publishing and worker setup](docs/phase-2.md) for the editor, scheduler, uploads, contact delivery and verification. Start `npm run worker` alongside the development server for scheduled posts and local inbox processing.
 
 Phase 3 adds structured data, crawl outputs, moderation, staging ad layouts, Cookiebot/GA4 integration and CSP reporting. See [Phase 3 setup and remaining staging gates](docs/phase-3.md). Live ads remain off until approval and consent configuration.
