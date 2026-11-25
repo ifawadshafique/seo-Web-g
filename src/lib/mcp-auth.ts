@@ -1,9 +1,52 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createHash, timingSafeEqual } from "node:crypto";
 import prisma from "./prisma";
 import { canAccess } from "./security";
 
 export const draftScope = "content:drafts";
 export const metadataPath = "/.well-known/oauth-protected-resource/api/mcp";
+
+export function mcpTokenConfig() {
+  const site = endpoint(process.env.SITE_URL);
+  const hash = process.env.MCP_ACCESS_TOKEN_HASH;
+  const staffId = Number(process.env.MCP_STAFF_USER_ID);
+  if (
+    !site ||
+    !hash ||
+    !/^[a-f0-9]{64}$/.test(hash) ||
+    !Number.isSafeInteger(staffId) ||
+    staffId < 1 ||
+    staffId > 2147483647
+  )
+    return null;
+  return { origin: site.origin, hash, staffId };
+}
+
+async function staffActor(staffId: number) {
+  const actor = await prisma.user.findUnique({
+    where: { id: staffId },
+    select: { id: true, role: true },
+  });
+  return actor && canAccess(actor.role, "content") ? actor : null;
+}
+
+function bearer(request: Request) {
+  return /^Bearer ([^\s,]+)$/i.exec(
+    request.headers.get("authorization") ?? "",
+  )?.[1];
+}
+
+export async function mcpTokenActor(
+  request: Request,
+  config: NonNullable<ReturnType<typeof mcpTokenConfig>>,
+) {
+  const token = bearer(request);
+  if (!token || !/^wb_[A-Za-z0-9_-]{43}$/.test(token)) return null;
+  const hash = createHash("sha256").update(token).digest();
+  return timingSafeEqual(hash, Buffer.from(config.hash, "hex"))
+    ? staffActor(config.staffId)
+    : null;
+}
 
 function endpoint(value: string | undefined) {
   if (!value) return null;
@@ -57,9 +100,7 @@ export async function mcpActor(
   request: Request,
   config: NonNullable<ReturnType<typeof mcpConfig>>,
 ) {
-  const token = /^Bearer ([^\s,]+)$/i.exec(
-    request.headers.get("authorization") ?? "",
-  )?.[1];
+  const token = bearer(request);
   if (!token || token.length > 16384) return null;
   if (keys?.url !== config.jwksUrl.href)
     keys = {
@@ -82,9 +123,5 @@ export async function mcpActor(
   } catch {
     return null;
   }
-  const actor = await prisma.user.findUnique({
-    where: { id: config.staffId },
-    select: { id: true, role: true },
-  });
-  return actor && canAccess(actor.role, "content") ? actor : null;
+  return staffActor(config.staffId);
 }
