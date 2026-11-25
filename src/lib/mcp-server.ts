@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -295,11 +296,15 @@ export async function handleMcpRequest(request: Request, tokenOnly = false) {
   if (!allowedOrigin)
     return new Response(null, { status: 404, headers: privateHeaders });
   const origin = request.headers.get("origin");
-  if (origin && origin !== allowedOrigin)
+  if (
+    origin &&
+    origin !== allowedOrigin &&
+    !(tokenOnly && origin === "https://claude.ai")
+  )
     return new Response(null, { status: 403, headers: privateHeaders });
   const tokenActor = tokenConfig && (await mcpTokenActor(request, tokenConfig));
   const actor = tokenActor || (config && (await mcpActor(request, config)));
-  if (!actor)
+  if (!actor && (config || request.headers.has("x-api-key")))
     return new Response(null, {
       status: config ? 401 : 403,
       headers: config
@@ -312,7 +317,7 @@ export async function handleMcpRequest(request: Request, tokenOnly = false) {
 
   let parsedBody: unknown;
   try {
-    parsedBody = await boundedJson(request, 1048576);
+    parsedBody = await boundedJson(request, actor ? 1048576 : 4096);
   } catch (error) {
     return Response.json(
       {
@@ -329,7 +334,19 @@ export async function handleMcpRequest(request: Request, tokenOnly = false) {
       },
     );
   }
-  const server = publishingServer(actor, !!tokenActor);
+  if (!actor && !isDiscoveryRequest(parsedBody))
+    return new Response(null, { status: 403, headers: privateHeaders });
+
+  const server = actor
+    ? publishingServer(actor, !!tokenActor)
+    : new McpServer(
+        { name: "Workboard Admin", version: "1.0.0" },
+        { capabilities: { tools: {} } },
+      );
+  if (!actor)
+    server.server.setRequestHandler(ListToolsRequestSchema, async () => ({
+      tools: [],
+    }));
   const transport = new WebStandardStreamableHTTPServerTransport({
     enableJsonResponse: true,
   });
@@ -343,4 +360,14 @@ export async function handleMcpRequest(request: Request, tokenOnly = false) {
   } finally {
     await server.close();
   }
+}
+
+function isDiscoveryRequest(body: unknown) {
+  if (!body || typeof body !== "object" || !("method" in body)) return false;
+  return (
+    body.method === "initialize" ||
+    body.method === "notifications/initialized" ||
+    body.method === "ping" ||
+    body.method === "tools/list"
+  );
 }
