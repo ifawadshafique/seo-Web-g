@@ -40,7 +40,7 @@ export async function mcpTokenActor(
   request: Request,
   config: NonNullable<ReturnType<typeof mcpTokenConfig>>,
 ) {
-  const token = request.headers.get("x-workboard-token");
+  const token = request.headers.get("x-api-key");
   if (!token || !/^wb_[A-Za-z0-9_-]{43}$/.test(token)) return null;
   const hash = createHash("sha256").update(token).digest();
   return timingSafeEqual(hash, Buffer.from(config.hash, "hex"))
