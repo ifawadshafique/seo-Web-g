@@ -10,6 +10,7 @@ import {
 import { cspPolicy } from "./lib/csp";
 import { effectiveCspMode, observeCsp } from "./lib/csp-audit";
 import { recordTraffic } from "./lib/traffic";
+import { publicIndexingEnabled } from "./lib/public-indexing";
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const path = request.nextUrl.pathname,
     appEnv = process.env.APP_ENV ?? "local";
@@ -32,10 +33,12 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
           : "Content-Security-Policy-Report-Only",
         policy,
       );
-    if (appEnv !== "production")
+    if (!publicIndexingEnabled())
       response.headers.set("X-Robots-Tag", "noindex, nofollow");
     if (
-      /^\/(admin|login|account|api\/(auth|admin|member-auth))(\/|$)/.test(path)
+      /^\/(admin|login|account|api\/(auth|admin|member-auth|mcp(?:-admin|-demo)?))(\/|$)/.test(
+        path,
+      )
     ) {
       response.headers.set("Cache-Control", "private, no-store");
       response.headers.set("X-Robots-Tag", "noindex, nofollow");
