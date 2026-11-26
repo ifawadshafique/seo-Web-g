@@ -138,7 +138,7 @@ function publishingServer(
         : postDraft,
       annotations: { destructiveHint: false },
     },
-    (input) =>
+    (input: z.output<typeof postDraft>) =>
       toolResult(async () => {
         const { post, warnings } = await savePost(
           {
