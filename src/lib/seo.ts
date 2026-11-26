@@ -3,6 +3,7 @@ import countries from "i18n-iso-countries";
 import english from "i18n-iso-countries/langs/en.json";
 import type { FullPost } from "./publishing";
 import { cleanBody, plainText } from "./content-validation";
+import { publicIndexingEnabled } from "./public-indexing";
 countries.registerLocale(english);
 export function siteOrigin() {
   return new URL(process.env.SITE_URL ?? "http://localhost:3000").origin;
@@ -44,7 +45,7 @@ export function pageMetadata({
     metadataBase: new URL(siteOrigin()),
     alternates: { canonical: url },
     robots: {
-      index: index && process.env.APP_ENV === "production",
+      index: index && publicIndexingEnabled(),
       follow: true,
     },
     openGraph: {
