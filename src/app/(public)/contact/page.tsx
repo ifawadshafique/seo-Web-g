@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { cleanBody } from "@/lib/content-validation";
 import { ui } from "@/lib/ui-text";
 import { ContactForm } from "./form";
+
 export async function generateMetadata() {
   return pageMetadata({
     title: "Contact",
@@ -27,6 +28,14 @@ export default async function Page() {
       ) : (
         <p>{ui.contactIntro}</p>
       )}
+      <section aria-labelledby="post-a-job">
+        <h2 id="post-a-job">Want to post a job?</h2>
+        <p>
+          Use the form below to send the job title, company name, location or
+          remote status, job description, application instructions, and any
+          closing date. We’ll review the details before posting the job.
+        </p>
+      </section>
       <ContactForm />
     </main>
   );

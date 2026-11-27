@@ -4,6 +4,11 @@ import prisma from "@/lib/prisma";
 import { sameOrigin, AuthError } from "@/lib/auth";
 import { digest } from "@/lib/security";
 import { contentResult, ContentError } from "@/lib/api-error";
+import { deliverOutboxMail } from "@/lib/mail-outbox";
+import { after } from "next/server";
+
+export const maxDuration = 20;
+
 const input = z.object({
   name: z.string().trim().min(1).max(100),
   email: z.string().email().max(254),
@@ -41,18 +46,23 @@ export async function POST(request: Request) {
     });
     if (bucket.count > 5)
       throw new ContentError("Too many messages. Please try again later", 429);
-    await prisma.$transaction(async (tx) => {
+    const mail = await prisma.$transaction(async (tx) => {
       await tx.contactMessage.create({
         data: { name: data.name, email: data.email, message: data.message },
       });
-      await tx.mailOutbox.create({
+      return tx.mailOutbox.create({
         data: {
           subject: "Website contact message",
           replyTo: data.email,
           text: `From: ${data.name}\nEmail: ${data.email}\n\n${data.message}`,
         },
+        select: { id: true },
       });
     });
+    if (process.env.SMTP_URL && process.env.CONTACT_TO && process.env.MAIL_FROM)
+      after(async () => {
+        await deliverOutboxMail(mail.id);
+      });
     return Response.json({ ok: true }, { status: 202 });
   });
 }
