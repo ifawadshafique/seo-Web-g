@@ -2136,3 +2136,79 @@ body:has(.portal-about) .site-brand-logo {
     grid-column: 1;
   }
 }
+.site-header > nav {
+  align-items: center;
+}
+.profile-dropdown {
+  position: relative;
+  min-width: 0;
+}
+.profile-dropdown > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  list-style: none;
+}
+.profile-dropdown > summary::-webkit-details-marker {
+  display: none;
+}
+.profile-dropdown > summary::after {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border: solid currentColor;
+  border-width: 0 1px 1px 0;
+  transform: translateY(-2px) rotate(45deg);
+}
+.profile-username {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-initial {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  background: #dff2e8;
+  color: #184c3d;
+  font-weight: 700;
+}
+.profile-dropdown-panel {
+  position: absolute;
+  z-index: 20;
+  inset: calc(100% + 0.5rem) 0 auto auto;
+  width: 13rem;
+  max-width: 90vw;
+  overflow: hidden;
+  background: #fff;
+  color: #152e26;
+  border: 1px solid #dce7e0;
+  border-radius: 9px;
+  box-shadow: 0 10px 28px #183d2b26;
+}
+.profile-dropdown-panel p,
+.profile-dropdown-panel a {
+  display: block;
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  overflow-wrap: anywhere;
+}
+.profile-dropdown-panel p {
+  color: #53665e;
+  border-bottom: 1px solid #dce7e0;
+}
+.profile-dropdown-panel a:hover,
+.profile-dropdown-panel a:focus-visible {
+  background: #e9f4f1;
+}
+@media (max-width: 680px) {
+  .profile-dropdown-panel {
+    position: fixed;
+    inset: auto 1rem auto auto;
+    margin-top: 0.5rem;
+  }
+}

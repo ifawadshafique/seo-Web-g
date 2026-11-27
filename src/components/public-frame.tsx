@@ -1,4 +1,5 @@
 import { firebaseConfigured } from "@/lib/firebase-auth";
+import { currentMember } from "@/lib/member-session";
 /* eslint-disable @next/next/no-html-link-for-pages -- Public links use full server navigation to limit hydration work on low-end devices. */
 import { imageUrl } from "@/lib/image-url";
 import { headers } from "next/headers";
@@ -12,7 +13,13 @@ import { siteSettings } from "@/lib/settings";
 import { ui, templatePages } from "@/lib/ui-text";
 export async function PublicFrame({ children }: { children: React.ReactNode }) {
   await connection();
-  const [settings, plan] = await Promise.all([siteSettings(), publicAdPlan()]);
+  const memberEnabled = firebaseConfigured();
+  const [settings, plan, member] = await Promise.all([
+    siteSettings(),
+    publicAdPlan(),
+    memberEnabled ? currentMember() : null,
+  ]);
+  const username = member?.email.split("@")[0] || "Account";
   const nonce = (await headers()).get("x-nonce") ?? "";
   const content = (
     <>
@@ -41,7 +48,23 @@ export async function PublicFrame({ children }: { children: React.ReactNode }) {
           <a href="/search">{ui.search}</a>
           <a href="/about">{ui.about}</a>
           <a href="/contact">{ui.contact}</a>
-          {firebaseConfigured() && <a href="/account">Sign in / Account</a>}
+          {member ? (
+            <details className="profile-dropdown">
+              <summary>
+                <span className="profile-initial" aria-hidden="true">
+                  {Array.from(username)[0]?.toUpperCase()}
+                </span>
+                <span className="profile-username">{username}</span>
+              </summary>
+              <div className="profile-dropdown-panel">
+                <p>{member.email}</p>
+                <a href="/account">Your account</a>
+                <a href="/account/saved-jobs">Saved jobs</a>
+              </div>
+            </details>
+          ) : memberEnabled ? (
+            <a href="/account/sign-in">Sign in</a>
+          ) : null}
           <a className="nav-admin" href="/admin">
             Publishing desk ↗
           </a>

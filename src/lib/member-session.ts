@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { sealData, unsealData } from "iron-session";
 import { firebaseUserForToken } from "./firebase-auth";
 export const memberCookie = "jobseeker_session";
@@ -14,7 +15,7 @@ export async function sealMemberToken(idToken: string) {
     { password: process.env.AUTH_ENCRYPTION_KEY!, ttl: 3600 },
   );
 }
-export async function currentMember() {
+export const currentMember = cache(async function () {
   const value = (await cookies()).get(memberCookie)?.value;
   if (!value || value.length > 12000) return null;
   try {
@@ -28,4 +29,4 @@ export async function currentMember() {
   } catch {
     return null;
   }
-}
+});
