@@ -24,6 +24,14 @@ export async function Listing({
 }) {
   const result = await browsePosts(params, scope);
   if (result.page > 1 && !result.posts.length) notFound();
+  const firstPage = Math.max(
+    1,
+    Math.min(result.page - 2, result.totalPages - 4),
+  );
+  const pageNumbers = Array.from(
+    { length: Math.min(result.totalPages, 5) },
+    (_, index) => firstPage + index,
+  );
   const href = (page: number) => {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(params))
@@ -50,11 +58,6 @@ export async function Listing({
             <span>Start with the details.</span>
           </h1>
           <p>{ui.intro}</p>
-          <SearchForm
-            params={params}
-            countries={result.countries}
-            tags={result.tags}
-          />
         </section>
       ) : (
         <section className="listing-heading">
@@ -65,13 +68,13 @@ export async function Listing({
           </nav>
           <h1>{title ?? ui.search}</h1>
           {result.page === 1 && intro && <p className="hub-intro">{intro}</p>}
-          <SearchForm
-            params={params}
-            countries={result.countries}
-            tags={result.tags}
-          />
         </section>
       )}
+      <SearchForm
+        params={params}
+        countries={result.countries}
+        tags={result.tags}
+      />
       <section className="listing-section">
         <div className="section-heading">
           <h2>{hero ? ui.latest : ui.search}</h2>
@@ -103,7 +106,19 @@ export async function Listing({
               ← {ui.previous}
             </a>
           )}
-          {result.page * 12 < result.total && (
+          {result.totalPages > 1 &&
+            pageNumbers.map((page) => (
+              <a
+                key={page}
+                className={page === result.page ? "button" : "button secondary"}
+                href={href(page)}
+                aria-label={`Page ${page}`}
+                aria-current={page === result.page ? "page" : undefined}
+              >
+                {page}
+              </a>
+            ))}
+          {result.page < result.totalPages && (
             <a className="button secondary" href={href(result.page + 1)}>
               {ui.next} →
             </a>

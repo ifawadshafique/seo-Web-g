@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { publicWhere, postInclude } from "./publishing";
 export type SearchParams = Record<string, string | string[] | undefined>;
+const postsPerPage = 9;
 export const param = (params: SearchParams, key: string) =>
   typeof params[key] === "string" ? (params[key] as string) : "";
 export async function browsePosts(
@@ -31,8 +32,8 @@ export async function browsePosts(
       where,
       include: postInclude,
       orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
-      skip: (page - 1) * 12,
-      take: 12,
+      skip: (page - 1) * postsPerPage,
+      take: postsPerPage,
     }),
     prisma.post.count({ where }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
@@ -48,6 +49,7 @@ export async function browsePosts(
     posts,
     total,
     page,
+    totalPages: Math.ceil(total / postsPerPage),
     categories,
     tags,
     countries: countries.map((row) => row.country!).filter(Boolean),
