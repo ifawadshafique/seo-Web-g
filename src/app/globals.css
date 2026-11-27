@@ -1515,6 +1515,8 @@ body:has(.portal-home) .site-brand-logo {
   color: #e0e8e4;
 }
 .portal-home .hero + .public-search {
+  position: relative;
+  top: auto;
   width: min(760px, 90%);
   margin: -5.75rem auto 0;
   padding: 0.65rem;
