@@ -66,7 +66,7 @@ export async function GET(
         .map((item) => ({ path: "/" + item.slug, date: item.updatedAt })),
     ].slice(skip, skip + 45000);
   }
-  if (page > 0 && !entries.length) return new Response(null, { status: 404 });
+  if (!entries.length) return new Response(null, { status: 404 });
   return xmlResponse(
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
       entries

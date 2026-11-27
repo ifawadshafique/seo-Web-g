@@ -21,7 +21,7 @@ export async function GET() {
       groups
         .flatMap((group) =>
           Array.from(
-            { length: Math.max(1, Math.ceil(group.count / 45000)) },
+            { length: Math.ceil(group.count / 45000) },
             (_, page) =>
               `<sitemap><loc>${xmlEscape(absoluteUrl(`/sitemaps/${group.name}-${page}.xml`))}</loc></sitemap>`,
           ),
