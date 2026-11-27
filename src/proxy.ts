@@ -58,9 +58,14 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
           request.nextUrl.protocol.replace(":", ""))
         : request.nextUrl.protocol.replace(":", "");
     const host = request.headers.get("host") ?? request.nextUrl.host;
+    const legacyMcpEndpoint =
+      protocol === "https" &&
+      host === process.env.MCP_LEGACY_HOST &&
+      path === "/api/mcp-admin";
     if (
-      host !== canonical.host ||
-      (canonical.protocol === "https:" && protocol !== "https")
+      !legacyMcpEndpoint &&
+      (host !== canonical.host ||
+        (canonical.protocol === "https:" && protocol !== "https"))
     ) {
       const target = new URL(canonical.origin);
       target.pathname = path;

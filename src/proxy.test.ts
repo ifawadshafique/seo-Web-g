@@ -48,6 +48,25 @@ describe("public website domain redirects", () => {
     expect(insecure.status).toBe(301);
     expect(insecure.headers.get("location")).toBe("https://jobs.example/login");
   });
+  it("keeps the HTTPS legacy Claude endpoint available while redirecting its public pages", async () => {
+    setup();
+    vi.stubEnv("MCP_LEGACY_HOST", "old.example");
+    const connector = await proxy(
+      request("https://old.example/api/mcp-admin"),
+      event(),
+    );
+    expect(connector.headers.get("location")).toBeNull();
+    expect(connector.headers.get("x-robots-tag")).toContain("noindex");
+    const page = await proxy(request("https://old.example/contact"), event());
+    expect(page.headers.get("location")).toBe("https://jobs.example/contact");
+    const insecure = await proxy(
+      request("http://old.example/api/mcp-admin", "http"),
+      event(),
+    );
+    expect(insecure.headers.get("location")).toBe(
+      "https://jobs.example/api/mcp-admin",
+    );
+  });
   it("keeps protected staging gated and preserves production canonical redirects", async () => {
     setup();
     vi.stubEnv("STAGING_PUBLIC_ACCESS", "false");
