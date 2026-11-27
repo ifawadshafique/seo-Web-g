@@ -7,6 +7,7 @@ import { ConsentRuntime } from "./consent-runtime";
 import { AdPlacement } from "./ad-placement";
 import { connection } from "next/server";
 import { OptimizedImage as Image } from "./optimized-image";
+import BrandImage from "next/image";
 import { siteSettings } from "@/lib/settings";
 import { ui, templatePages } from "@/lib/ui-text";
 export async function PublicFrame({ children }: { children: React.ReactNode }) {
@@ -17,16 +18,24 @@ export async function PublicFrame({ children }: { children: React.ReactNode }) {
     <>
       <header className="site-header">
         <a className="site-brand" href="/">
-          {settings.logo && (
+          {settings.logo ? (
             <Image
               src={imageUrl(settings.logo)}
               alt={settings.site_name}
               width={40}
               height={40}
             />
+          ) : (
+            <BrandImage
+              className="site-brand-logo"
+              src="/workboard-logo-transparent.webp"
+              alt={settings.site_name}
+              width={560}
+              height={108}
+              unoptimized
+            />
           )}
-          <span className="brand-mark">W</span>
-          {settings.site_name}
+          {settings.logo && settings.site_name}
         </a>
         <nav aria-label="Main navigation">
           <a href="/search">{ui.search}</a>

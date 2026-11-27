@@ -7,9 +7,11 @@ import prisma from "@/lib/prisma";
 import { postInclude, publicWhere } from "@/lib/publishing";
 import { PostView } from "@/components/post-view";
 import { PostCard } from "@/components/post-card";
+import { ListingRow } from "@/components/listing";
 import { cleanBody } from "@/lib/content-validation";
 import { siteSettings } from "@/lib/settings";
 import { ui } from "@/lib/ui-text";
+import { AboutView } from "@/components/about-view";
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props) {
   await connection();
@@ -48,6 +50,8 @@ export default async function Page({ params }: Props) {
       where: { slug, status: "PUBLISHED" },
     });
     if (!page) notFound();
+    if (slug === "about")
+      return <AboutView title={page.title} body={page.body} />;
     return (
       <main className="public-main static-page">
         <nav className="breadcrumbs">
@@ -84,20 +88,33 @@ export default async function Page({ params }: Props) {
     take: 6,
   });
   return (
-    <main className="public-main">
+    <main
+      className={
+        post.jobDetails ? "public-main portal-job-detail" : "public-main"
+      }
+    >
+      {post.jobDetails && (
+        <div className="portal-jobs-heading">Job details</div>
+      )}
       <div className="post-layout">
         <PostView post={post} timezone={settings.site_timezone} />
-        <aside className="ad-sidebar">
-          <AdPlacement name="sidebar" />
-        </aside>
+        {!post.jobDetails && (
+          <aside className="ad-sidebar">
+            <AdPlacement name="sidebar" />
+          </aside>
+        )}
       </div>
       {related.length > 0 && (
         <section className="related-posts">
           <h2>{ui.related}</h2>
-          <div className="post-grid">
-            {related.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
+          <div className={post.jobDetails ? "directory-results" : "post-grid"}>
+            {related.map((item) =>
+              post.jobDetails ? (
+                <ListingRow key={item.id} post={item} />
+              ) : (
+                <PostCard key={item.id} post={item} />
+              ),
+            )}
           </div>
         </section>
       )}

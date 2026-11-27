@@ -2,7 +2,6 @@ import { pageMetadata } from "@/lib/seo";
 import { connection } from "next/server";
 import { Listing } from "@/components/listing";
 import { SearchParams } from "@/lib/browse";
-import { ui } from "@/lib/ui-text";
 export async function generateMetadata({
   searchParams,
 }: {
@@ -11,7 +10,7 @@ export async function generateMetadata({
   await connection();
   const query = await searchParams;
   const params = new URLSearchParams();
-  for (const key of ["q", "country", "tag", "page"])
+  for (const key of ["q", "country", "category", "tag", "posted", "sort", "page"])
     if (typeof query[key] === "string" && query[key])
       params.set(key, query[key]);
   const title =
@@ -33,6 +32,6 @@ export default async function Page({
 }) {
   await connection();
   return (
-    <Listing params={await searchParams} title={ui.search} path="/search" />
+    <Listing params={await searchParams} title="Jobs" path="/search" />
   );
 }

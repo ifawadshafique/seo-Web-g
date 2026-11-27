@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { publicWhere, postInclude } from "./publishing";
 export type SearchParams = Record<string, string | string[] | undefined>;
-const postsPerPage = 9;
+export const postsPerPage = 9;
 export const param = (params: SearchParams, key: string) =>
   typeof params[key] === "string" ? (params[key] as string) : "";
 export async function browsePosts(
@@ -22,16 +22,25 @@ export async function browsePosts(
     >`SELECT id FROM "Post" WHERE status='PUBLISHED' AND deleted_at IS NULL AND published_at <= (now() AT TIME ZONE 'UTC') AND to_tsvector('english', coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || body) @@ websearch_to_tsquery('english', ${q})`;
     where.id = { in: ids.map((row) => row.id) };
   }
-  if (scope?.category) where.category = { slug: scope.category };
+  const category = scope?.category || param(params, "category");
+  if (category) where.category = { slug: category };
   const tag = scope?.tag || param(params, "tag");
   if (tag) where.tags = { some: { tag: { slug: tag } } };
   const country = param(params, "country");
   if (country) where.jobDetails = { country };
+  const age = param(params, "posted");
+  if (age === "7" || age === "30") {
+    where.publishedAt = {
+      lte: new Date(),
+      gte: new Date(Date.now() - Number(age) * 86400000),
+    };
+  }
+  const sort = param(params, "sort") === "oldest" ? "asc" : "desc";
   const [posts, total, categories, tags, countries] = await Promise.all([
     prisma.post.findMany({
       where,
       include: postInclude,
-      orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+      orderBy: [{ publishedAt: sort }, { id: sort }],
       skip: (page - 1) * postsPerPage,
       take: postsPerPage,
     }),

@@ -27,6 +27,12 @@ export function PostView({
       timeZone: timezone,
     }).format(date);
   const job = post.jobDetails;
+  const location = [
+    ...new Set([job?.location, job?.country].filter(Boolean)),
+  ].join(", ");
+  const employment = [job?.employmentType, job?.workplaceType]
+    .filter(Boolean)
+    .join(" · ");
   const expired =
     job &&
     (job.jobStatus !== "OPEN" ||
@@ -68,7 +74,9 @@ export function PostView({
         <h1>{post.title}</h1>
         <p className="detail-excerpt">{post.excerpt}</p>
         <div className="detail-meta">
-          <span>{post.author.name}</span>
+          <span>{job?.employerName || post.author.name}</span>
+          {location && <span>{location}</span>}
+          {employment && <span>{employment}</span>}
           {post.publishedAt && (
             <span>
               {ui.published}{" "}
@@ -85,131 +93,141 @@ export function PostView({
           </span>
         </div>
       </div>
-      {post.featuredMedia && (
-        <Image
-          className="detail-image"
-          src={imageUrl(post.featuredMedia.url)}
-          alt={post.featuredMedia.altText}
-          width={post.featuredMedia.width}
-          height={post.featuredMedia.height}
-          sizes="(max-width: 900px) 100vw, 900px"
-          preload
-        />
-      )}
-      {job && (
-        <section className="job-summary">
-          <div>
-            <small>Employer</small>
-            <strong>{job.employerName}</strong>
-          </div>
-          <div>
-            <small>Location</small>
-            <strong>
-              {job.location}, {job.country}
-            </strong>
-          </div>
-          <div>
-            <small>Employment</small>
-            <strong>
-              {job.employmentType} · {job.workplaceType}
-            </strong>
-          </div>
-          {(job.salaryMin !== null || job.salaryMax !== null) && (
-            <div>
-              <small>Salary</small>
-              <strong>
-                {job.salaryMin !== null
-                  ? job.salaryMin.toLocaleString()
-                  : "Up to "}
-                {job.salaryMax !== null
-                  ? `${job.salaryMin !== null ? "–" : ""}${job.salaryMax.toLocaleString()}`
-                  : ""}{" "}
-                {job.salaryCurrency} / {job.salaryPeriod?.toLowerCase()}
-              </strong>
-            </div>
-          )}
-          {job.closingDate && (
-            <div>
-              <small>Closing date</small>
-              <strong>{format(job.closingDate)}</strong>
-            </div>
-          )}
-          <div>
-            <small>Status</small>
-            <strong>{expired ? "Closed" : job.jobStatus}</strong>
-          </div>
-        </section>
-      )}
-      {expired && <p className="warning">{ui.closed}</p>}
-      <div className="rich-content article-body">
-        <div
-          dangerouslySetInnerHTML={{ __html: optimizeBodyImages(parts.first) }}
-        />
-        {!preview && <AdPlacement name="in-article-1" />}
-        {long ? (
-          <>
-            <div
-              dangerouslySetInnerHTML={{
-                __html: optimizeBodyImages(parts.beforeMiddle),
-              }}
-            />
-            {!preview && <AdPlacement name="in-article-2" />}
-            <div
-              dangerouslySetInnerHTML={{
-                __html: optimizeBodyImages(parts.afterMiddle),
-              }}
-            />
-          </>
-        ) : (
-          <div
-            dangerouslySetInnerHTML={{ __html: optimizeBodyImages(parts.rest) }}
-          />
-        )}
-      </div>
-      {!preview && <AdPlacement name="end-of-post" />}
-      {job && (
-        <>
-          <aside className="scam-notice">
-            <h2>{ui.scam}</h2>
-            <p>{scamNotice}</p>
-          </aside>
-          <div className="apply-links">
-            {!expired && (
+      <div className={job ? "job-detail-columns" : undefined}>
+        {job && (
+          <aside className="job-detail-sidebar">
+            <div className="apply-links">
+              {!expired && (
+                <a
+                  className="button"
+                  data-apply-link="true"
+                  href={job.applicationUrl}
+                  rel="nofollow noopener noreferrer"
+                  target="_blank"
+                >
+                  {ui.apply} ↗
+                </a>
+              )}
               <a
-                className="button"
-                data-apply-link="true"
-                href={job.applicationUrl}
-                rel="nofollow noopener noreferrer"
+                href={job.sourceUrl}
                 target="_blank"
+                rel="nofollow noopener noreferrer"
               >
-                {ui.apply} ↗
+                View original listing ↗
               </a>
+            </div>
+            {expired && <p className="warning">{ui.closed}</p>}
+            <section className="job-summary" aria-labelledby="job-overview">
+              <h2 id="job-overview">Job overview</h2>
+              <div>
+                <small>Employer</small>
+                <strong>{job.employerName}</strong>
+              </div>
+              {location && (
+                <div>
+                  <small>Location</small>
+                  <strong>{location}</strong>
+                </div>
+              )}
+              {employment && (
+                <div>
+                  <small>Employment</small>
+                  <strong>{employment}</strong>
+                </div>
+              )}
+              {(job.salaryMin !== null || job.salaryMax !== null) && (
+                <div>
+                  <small>Salary</small>
+                  <strong>
+                    {job.salaryMin !== null
+                      ? job.salaryMin.toLocaleString()
+                      : "Up to "}
+                    {job.salaryMax !== null &&
+                      `${job.salaryMin !== null ? "–" : ""}${job.salaryMax.toLocaleString()}`}{" "}
+                    {job.salaryCurrency}
+                    {job.salaryPeriod && ` / ${job.salaryPeriod.toLowerCase()}`}
+                  </strong>
+                </div>
+              )}
+              {job.closingDate && (
+                <div>
+                  <small>Closing date</small>
+                  <strong>{format(job.closingDate)}</strong>
+                </div>
+              )}
+              <div>
+                <small>Status</small>
+                <strong>{expired ? "Closed" : "Open"}</strong>
+              </div>
+            </section>
+            {!preview && <AdPlacement name="sidebar" />}
+          </aside>
+        )}
+        <div className="job-detail-copy">
+          {post.featuredMedia && (
+            <Image
+              className="detail-image"
+              src={imageUrl(post.featuredMedia.url)}
+              alt={post.featuredMedia.altText}
+              width={post.featuredMedia.width}
+              height={post.featuredMedia.height}
+              sizes="(max-width: 900px) 100vw, 900px"
+              preload
+            />
+          )}
+          <div className="rich-content article-body">
+            <div
+              dangerouslySetInnerHTML={{
+                __html: optimizeBodyImages(parts.first),
+              }}
+            />
+            {!preview && <AdPlacement name="in-article-1" />}
+            {long ? (
+              <>
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: optimizeBodyImages(parts.beforeMiddle),
+                  }}
+                />
+                {!preview && <AdPlacement name="in-article-2" />}
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: optimizeBodyImages(parts.afterMiddle),
+                  }}
+                />
+              </>
+            ) : (
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: optimizeBodyImages(parts.rest),
+                }}
+              />
             )}
-            <a
-              href={job.sourceUrl}
-              target="_blank"
-              rel="nofollow noopener noreferrer"
-            >
-              {ui.source} ↗
-            </a>
           </div>
-        </>
-      )}
-      <div className="job-chips">
-        {post.tags.map((link) => (
-          <a href={`/tag/${link.tag.slug}`} key={link.tag.id}>
-            {link.tag.name}
-          </a>
-        ))}
+          {!preview && <AdPlacement name="end-of-post" />}
+          {job && (
+            <aside className="scam-notice">
+              <h2>{ui.scam}</h2>
+              <p>{scamNotice}</p>
+            </aside>
+          )}
+          <div className="job-chips">
+            {post.tags.map((link) => (
+              <a href={`/tag/${link.tag.slug}`} key={link.tag.id}>
+                {link.tag.name}
+              </a>
+            ))}
+          </div>
+          {job && !preview && (
+            <a className="report-link" href={"/report/" + post.slug}>
+              Report this listing
+            </a>
+          )}
+          <Suspense fallback={null}>
+            <ShareButtons url={url} title={post.title} />
+          </Suspense>
+        </div>
       </div>
-      {job && !preview && (
-        <a className="report-link" href={"/report/" + post.slug}>
-          Report this listing
-        </a>
-      )}
-      <Suspense fallback={null}>
-        <ShareButtons url={url} title={post.title} />
-      </Suspense>
     </article>
   );
 }
