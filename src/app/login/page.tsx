@@ -1,12 +1,13 @@
 import { LoginForm } from "./form";
+import { AuthLayout } from "@/components/auth-layout";
 export const metadata = {
-  title: "Sign in",
+  title: "Publishing Desk sign-in",
   robots: { index: false, follow: false },
 };
 export default function LoginPage() {
   return (
-    <main className="mx-auto w-full max-w-lg p-8">
+    <AuthLayout description="Manage job listings and site content.">
       <LoginForm />
-    </main>
+    </AuthLayout>
   );
 }

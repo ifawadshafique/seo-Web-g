@@ -12,14 +12,17 @@ import { cleanBody } from "@/lib/content-validation";
 import { scamNotice } from "@/lib/content-shared";
 import { ui } from "@/lib/ui-text";
 import { ShareButtons } from "./share-buttons";
+import { SaveJobButton } from "./save-job-button";
 export function PostView({
   post,
   timezone = "Asia/Karachi",
   preview = false,
+  saved = false,
 }: {
   post: FullPost;
   timezone?: string;
   preview?: boolean;
+  saved?: boolean;
 }) {
   const format = (date: Date) =>
     new Intl.DateTimeFormat("en", {
@@ -115,6 +118,9 @@ export function PostView({
               >
                 View original listing ↗
               </a>
+              {!preview && (
+                <SaveJobButton slug={post.slug} initialSaved={saved} />
+              )}
             </div>
             {expired && <p className="warning">{ui.closed}</p>}
             <section className="job-summary" aria-labelledby="job-overview">

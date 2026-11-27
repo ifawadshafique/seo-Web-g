@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { messages as m } from "@/lib/messages";
+import { PasswordField } from "@/components/password-field";
 export function LoginForm({
   initialStep = "login",
   initialSecret = "",
@@ -79,8 +80,12 @@ export function LoginForm({
       </section>
     );
   return (
-    <form onSubmit={submit} className="flex flex-col gap-5">
-      <Heading className="text-3xl font-bold">{m.login}</Heading>
+    <form onSubmit={submit} className="member-credentials-form">
+      <Heading>
+        {step === "login"
+          ? "Sign in to Publishing Desk"
+          : "Verify your sign-in"}
+      </Heading>
       {step === "login" ? (
         <>
           <label>
@@ -93,17 +98,7 @@ export function LoginForm({
               className="block w-full rounded border p-3"
             />
           </label>
-          <label>
-            {m.password}
-            <input
-              name="password"
-              type="password"
-              required
-              maxLength={72}
-              autoComplete="current-password"
-              className="block w-full rounded border p-3"
-            />
-          </label>
+          <PasswordField label={m.password} maxLength={72} />
         </>
       ) : (
         <>
@@ -124,12 +119,13 @@ export function LoginForm({
           </label>
         </>
       )}
-      {error && <p role="alert">{error}</p>}
-      <button
-        disabled={busy}
-        className="rounded bg-blue-700 p-3 text-white disabled:opacity-50"
-      >
-        {step === "login" ? m.login : m.verify}
+      {error && (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      )}
+      <button disabled={busy} className="button">
+        {busy ? "Please wait…" : step === "login" ? m.login : m.verify}
       </button>
       {step !== "login" && (
         <Link prefetch={false} href="/login" className="underline">

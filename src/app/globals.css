@@ -1946,3 +1946,193 @@ body:has(.portal-about) .site-brand-logo {
     padding: 1rem;
   }
 }
+.directory-row-actions {
+  display: grid;
+  justify-items: end;
+  gap: 0.75rem;
+}
+.directory-row-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: start;
+}
+.directory-thumbnail {
+  display: block;
+  width: 132px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.save-job-button {
+  white-space: nowrap;
+}
+.save-job-button[aria-pressed="true"] {
+  color: #145c51;
+  background: #e9f4f1;
+}
+.member-password-field {
+  position: relative;
+}
+.member-password-field input {
+  padding-right: 3rem;
+}
+.member-password-field button {
+  position: absolute;
+  inset: 0 0.3rem 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  background: transparent;
+  border: 0;
+  color: #41574a;
+  cursor: pointer;
+}
+.saved-jobs-list {
+  margin: 1.5rem 0;
+}
+.saved-jobs-list ul {
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+.saved-jobs-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #dce4d7;
+}
+.saved-jobs-list li a {
+  text-decoration: underline;
+}
+@media (max-width: 520px) {
+  .directory-row-actions {
+    justify-items: start;
+  }
+}
+.member-auth-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.25rem, 5vw, 4rem);
+  background: radial-gradient(ellipse at 18% 28%, #e5f3ec, transparent 55%), #f6f8f7;
+  color: #152e26;
+}
+.member-auth-layout {
+  width: min(100%, 860px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 1.5rem clamp(2rem, 7vw, 6rem);
+}
+.member-auth-brand {
+  display: grid;
+  gap: 1rem;
+}
+.member-auth-logo {
+  display: block;
+  width: min(100%, 280px);
+}
+.member-auth-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.member-auth-brand p {
+  max-width: 24ch;
+  margin: 0;
+  color: #284e40;
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem);
+  line-height: 1.4;
+}
+.member-auth-card {
+  padding: clamp(1.25rem, 4vw, 2rem);
+  background: #fff;
+  border: 1px solid #dce7e0;
+  border-radius: 16px;
+  box-shadow: 0 18px 52px #183d2b12;
+}
+.member-auth-card h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 3vw, 1.9rem);
+  letter-spacing: -0.035em;
+}
+.member-auth-intro {
+  margin: 0.55rem 0 1.4rem;
+  color: #53665e;
+  line-height: 1.5;
+}
+.member-credentials-form {
+  display: grid;
+  gap: 1rem;
+}
+.member-credentials-form label {
+  display: block;
+  font-weight: 600;
+}
+.member-credentials-form input {
+  width: 100%;
+  margin-top: 0.35rem;
+  min-height: 48px;
+  border-color: #ccdcd3;
+  border-radius: 8px;
+}
+.member-credentials-form input:focus-visible,
+.member-auth-page a:focus-visible,
+.member-credentials-form button:focus-visible {
+  outline: 2px solid #176e62;
+  outline-offset: 2px;
+}
+.member-credentials-form .button {
+  min-height: 48px;
+  width: 100%;
+}
+.member-password-hint {
+  margin: 0.45rem 0 0;
+  color: #53665e;
+  font-size: 0.85rem;
+}
+.member-auth-switch {
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e9e4;
+  text-align: center;
+  color: #53665e;
+}
+.member-auth-switch a {
+  color: #145c51;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.member-auth-links {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 1.25rem;
+  color: #53665e;
+  font-size: 0.85rem;
+}
+.member-auth-links a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 680px) {
+  .member-auth-layout {
+    max-width: 420px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .member-auth-brand {
+    justify-items: center;
+    text-align: center;
+  }
+  .member-auth-logo {
+    width: min(75%, 230px);
+  }
+  .member-auth-links {
+    grid-column: 1;
+  }
+}

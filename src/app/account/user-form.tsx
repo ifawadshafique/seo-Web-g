@@ -1,12 +1,17 @@
 "use client";
 import { useState } from "react";
 import { LoginForm } from "../login/form";
+import { PasswordField } from "@/components/password-field";
 export function MemberForm({
   logout = false,
   staff = false,
+  saveJob,
+  register = false,
 }: {
   logout?: boolean;
   staff?: boolean;
+  saveJob?: string;
+  register?: boolean;
 }) {
   const [challenge, setChallenge] = useState<{ secret: string } | null>(null);
   const [error, setError] = useState("");
@@ -15,7 +20,9 @@ export function MemberForm({
     return <LoginForm initialStep="verify" initialSecret={challenge.secret} />;
   return (
     <form
-      className="flex flex-col gap-5"
+      className={
+        logout || staff ? "flex flex-col gap-5" : "member-credentials-form"
+      }
       onSubmit={async (event) => {
         event.preventDefault();
         setError("");
@@ -23,7 +30,7 @@ export function MemberForm({
         try {
           const data = Object.fromEntries(new FormData(event.currentTarget));
           const response = await fetch(
-            `/api/member-auth/${logout ? "logout" : staff ? "staff" : "login"}`,
+            `/api/member-auth/${logout ? "logout" : staff ? "staff" : register ? "register" : "login"}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -32,6 +39,21 @@ export function MemberForm({
           );
           const result = await response.json();
           if (!response.ok) throw new Error(result.error ?? "Sign-in failed");
+          if (saveJob && !logout && !staff) {
+            const saved = await fetch(
+              "/api/saved-jobs/" + encodeURIComponent(saveJob),
+              { method: "PUT" },
+            );
+            if (!saved.ok)
+              throw new Error(
+                "You’re signed in, but the job could not be saved. Return to the listing to try again.",
+              );
+            // Reload after changing the session so cached signed-out UI is discarded.
+            window.location.assign(
+              new URL("/" + saveJob, window.location.origin),
+            );
+            return;
+          }
           if (result.step === "enroll" || result.step === "verify") {
             let secret = "";
             if (result.step === "enroll") {
@@ -56,7 +78,7 @@ export function MemberForm({
       {!logout && !staff && (
         <>
           <label>
-            Email
+            Email address
             <input
               className="block w-full rounded border p-3"
               name="email"
@@ -64,19 +86,10 @@ export function MemberForm({
               required
               maxLength={254}
               autoComplete="username"
+              placeholder="you@example.com"
             />
           </label>
-          <label>
-            Password
-            <input
-              className="block w-full rounded border p-3"
-              name="password"
-              type="password"
-              required
-              maxLength={4096}
-              autoComplete="current-password"
-            />
-          </label>
+          <PasswordField maxLength={4096} registering={register} />
         </>
       )}
       {error && (
@@ -91,7 +104,9 @@ export function MemberForm({
             ? "Sign out"
             : staff
               ? "Open publishing dashboard"
-              : "Sign in"}
+              : register
+                ? "Create account"
+                : "Sign in"}
       </button>
     </form>
   );

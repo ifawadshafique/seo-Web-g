@@ -82,13 +82,16 @@ export async function POST(
       });
       return response;
     }
-    if (action !== "login")
+    if (action !== "login" && action !== "register")
       return NextResponse.json(
         { error: "Not found" },
         { status: 404, headers: privateHeaders },
       );
     const parsed = input.safeParse(await boundedJson(request, 8192));
     if (!parsed.success) throw new FirebaseAuthError();
+    const registering = action === "register";
+    if (registering && parsed.data.password.length < 6)
+      throw new ContentError("Use a password with at least six characters");
     const period = 15 * 60000;
     if (
       !(await publicRateLimit(request, "member-login-ip", 10, period)) ||
@@ -103,9 +106,22 @@ export async function POST(
         { error: "Too many attempts. Try again in 15 minutes." },
         { status: 429, headers: { ...privateHeaders, "Retry-After": "900" } },
       );
-    const result = await firebaseRequest("signInWithPassword", {
-      ...parsed.data,
-      returnSecureToken: true,
+    const result = await firebaseRequest(
+      registering ? "signUp" : "signInWithPassword",
+      {
+        ...parsed.data,
+        returnSecureToken: true,
+      },
+    ).catch((error: unknown) => {
+      if (
+        registering &&
+        error instanceof FirebaseAuthError &&
+        error.status === 401
+      )
+        throw new ContentError(
+          "Could not create an account. If you already have one, sign in.",
+        );
+      throw error;
     });
     const identity =
       typeof result.idToken === "string"

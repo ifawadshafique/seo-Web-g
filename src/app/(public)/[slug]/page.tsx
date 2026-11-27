@@ -12,6 +12,7 @@ import { cleanBody } from "@/lib/content-validation";
 import { siteSettings } from "@/lib/settings";
 import { ui } from "@/lib/ui-text";
 import { AboutView } from "@/components/about-view";
+import { savedJobSlugs } from "@/lib/saved-jobs";
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props) {
   await connection();
@@ -87,6 +88,14 @@ export default async function Page({ params }: Props) {
     orderBy: { publishedAt: "desc" },
     take: 6,
   });
+  const saved = post.jobDetails
+    ? await savedJobSlugs([
+        post.slug,
+        ...related
+          .filter((item) => item.contentType === "JOB")
+          .map((item) => item.slug),
+      ])
+    : new Set<string>();
   return (
     <main
       className={
@@ -97,7 +106,11 @@ export default async function Page({ params }: Props) {
         <div className="portal-jobs-heading">Job details</div>
       )}
       <div className="post-layout">
-        <PostView post={post} timezone={settings.site_timezone} />
+        <PostView
+          post={post}
+          timezone={settings.site_timezone}
+          saved={saved.has(post.slug)}
+        />
         {!post.jobDetails && (
           <aside className="ad-sidebar">
             <AdPlacement name="sidebar" />
@@ -110,7 +123,11 @@ export default async function Page({ params }: Props) {
           <div className={post.jobDetails ? "directory-results" : "post-grid"}>
             {related.map((item) =>
               post.jobDetails ? (
-                <ListingRow key={item.id} post={item} />
+                <ListingRow
+                  key={item.id}
+                  post={item}
+                  saved={saved.has(item.slug)}
+                />
               ) : (
                 <PostCard key={item.id} post={item} />
               ),

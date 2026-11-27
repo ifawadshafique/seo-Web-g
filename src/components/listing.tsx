@@ -6,6 +6,10 @@ import { breadcrumbSchema } from "@/lib/seo";
 import { browsePosts, param, postsPerPage, SearchParams } from "@/lib/browse";
 import { effectiveJobStatus } from "@/lib/content-shared";
 import type { FullPost } from "@/lib/publishing";
+import { savedJobSlugs } from "@/lib/saved-jobs";
+import { SaveJobButton } from "./save-job-button";
+import { OptimizedImage } from "./optimized-image";
+import { imageUrl } from "@/lib/image-url";
 import { ui } from "@/lib/ui-text";
 import { notFound } from "next/navigation";
 export async function Listing({
@@ -26,6 +30,11 @@ export async function Listing({
   const result = await browsePosts(params, scope);
   const jobsPage = path === "/search";
   if (result.page > 1 && !result.posts.length) notFound();
+  const saved = await savedJobSlugs(
+    result.posts
+      .filter((post) => post.contentType === "JOB")
+      .map((post) => post.slug),
+  );
   const firstPage = Math.max(
     1,
     Math.min(result.page - 2, result.totalPages - 4),
@@ -43,7 +52,9 @@ export async function Listing({
     return path + (query.size ? "?" + query : "");
   };
   return (
-    <main className={`public-main${hero ? " portal-home" : jobsPage ? " portal-jobs" : ""}`}>
+    <main
+      className={`public-main${hero ? " portal-home" : jobsPage ? " portal-jobs" : ""}`}
+    >
       {scope && (
         <JsonLd
           value={breadcrumbSchema([
@@ -73,25 +84,38 @@ export async function Listing({
         </section>
       )}
       {jobsPage ? (
-        <aside className="portal-jobs-filters" aria-labelledby="job-filters-heading">
+        <aside
+          className="portal-jobs-filters"
+          aria-labelledby="job-filters-heading"
+        >
           <h2 id="job-filters-heading">Filter jobs</h2>
           <form action="/search">
             <label>
               Job title or keyword
-              <input name="q" defaultValue={param(params, "q")} placeholder="e.g. Kitchen assistant" />
+              <input
+                name="q"
+                defaultValue={param(params, "q")}
+                placeholder="e.g. Kitchen assistant"
+              />
             </label>
             <label>
               Country
               <select name="country" defaultValue={param(params, "country")}>
                 <option value="">All countries</option>
-                {result.countries.map((country) => <option key={country}>{country}</option>)}
+                {result.countries.map((country) => (
+                  <option key={country}>{country}</option>
+                ))}
               </select>
             </label>
             <label>
               Category
               <select name="category" defaultValue={param(params, "category")}>
                 <option value="">All categories</option>
-                {result.categories.map(({ slug, name }) => <option key={slug} value={slug}>{name}</option>)}
+                {result.categories.map(({ slug, name }) => (
+                  <option key={slug} value={slug}>
+                    {name}
+                  </option>
+                ))}
               </select>
             </label>
             {result.tags.length > 0 && (
@@ -99,7 +123,11 @@ export async function Listing({
                 Job type
                 <select name="tag" defaultValue={param(params, "tag")}>
                   <option value="">All job types</option>
-                  {result.tags.map(({ slug, name }) => <option key={slug} value={slug}>{name}</option>)}
+                  {result.tags.map(({ slug, name }) => (
+                    <option key={slug} value={slug}>
+                      {name}
+                    </option>
+                  ))}
                 </select>
               </label>
             )}
@@ -123,7 +151,11 @@ export async function Listing({
           </form>
         </aside>
       ) : (
-        <SearchForm params={params} countries={result.countries} tags={result.tags} />
+        <SearchForm
+          params={params}
+          countries={result.countries}
+          tags={result.tags}
+        />
       )}
       {hero && (
         <nav className="portal-shortcuts" aria-label="Explore Workboard">
@@ -156,7 +188,7 @@ export async function Listing({
           <div className="directory-results">
             {result.posts.map((post, index) => (
               <Fragment key={post.id}>
-                <ListingRow post={post} />
+                <ListingRow post={post} saved={saved.has(post.slug)} />
                 {(index + 1) % 6 === 0 && (
                   <div className="in-feed-ad">
                     <AdPlacement name="in-feed" />
@@ -222,7 +254,13 @@ const listingDate = new Intl.DateTimeFormat("en", {
 });
 const salaryNumber = new Intl.NumberFormat("en");
 
-export function ListingRow({ post }: { post: FullPost }) {
+export function ListingRow({
+  post,
+  saved = false,
+}: {
+  post: FullPost;
+  saved?: boolean;
+}) {
   const job = post.jobDetails;
   const location = [
     ...new Set([job?.location, job?.country].filter(Boolean)),
@@ -274,13 +312,34 @@ export function ListingRow({ post }: { post: FullPost }) {
           </time>
         )}
       </div>
-      <a
-        className="button secondary directory-details"
-        href={`/${post.slug}`}
-        aria-label={`${job ? "Job details" : "Read article"}: ${post.title}`}
-      >
-        {job ? "Job details" : "Read article"}
-      </a>
+      <div className="directory-row-actions">
+        {post.featuredMedia && (
+          <OptimizedImage
+            className="directory-thumbnail"
+            src={imageUrl(post.featuredMedia.url)}
+            alt={post.featuredMedia.altText}
+            width={post.featuredMedia.width}
+            height={post.featuredMedia.height}
+            sizes="132px"
+          />
+        )}
+        <div className="directory-row-buttons">
+          {post.contentType === "JOB" && (
+            <SaveJobButton
+              key={`${post.slug}:${saved}`}
+              slug={post.slug}
+              initialSaved={saved}
+            />
+          )}
+          <a
+            className="button secondary directory-details"
+            href={`/${post.slug}`}
+            aria-label={`${job ? "Job details" : "Read article"}: ${post.title}`}
+          >
+            {job ? "Job details" : "Read article"}
+          </a>
+        </div>
+      </div>
     </article>
   );
 }

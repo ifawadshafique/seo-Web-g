@@ -10,7 +10,7 @@ export class FirebaseAuthError extends Error {
 export const firebaseConfigured = () =>
   !!(process.env.FIREBASE_API_KEY && process.env.FIREBASE_PROJECT_ID);
 export async function firebaseRequest(
-  action: "signInWithPassword" | "lookup",
+  action: "signInWithPassword" | "signUp" | "lookup",
   body: object,
 ) {
   if (!firebaseConfigured()) throw new FirebaseAuthError(503);

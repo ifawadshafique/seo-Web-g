@@ -57,6 +57,7 @@ model Post {
   featuredMedia Media?       @relation("FeaturedMedia", fields: [featuredMediaId], references: [id])
   tags          PostTag[]
   jobDetails    JobDetails?
+  savedJobs     SavedJob[]
   reports       JobReport[]
   publishTask   PublishTask?
   ogMedia       Media?       @relation("OpenGraphMedia", fields: [ogMediaId], references: [id])
@@ -65,6 +66,17 @@ model Post {
   @@index([scheduledAt])
   @@index([authorId])
   @@index([categoryId])
+}
+
+model SavedJob {
+  memberUid String   @db.VarChar(128)
+  postId    Int
+  savedAt   DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([memberUid, postId])
+  @@index([memberUid, savedAt])
+  @@index([postId])
 }
 
 enum ContentType {
